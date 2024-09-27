@@ -1,12 +1,12 @@
 linters:
   disable-all: true
   enable:
-    # - errcheck
+    - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - unused
+    # - unused
     - bidichk
     - bodyclose
     - containedctx
