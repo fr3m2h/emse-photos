@@ -1,0 +1,5 @@
+config.yaml
+bin/*
+.tmp/*
+.air*
+*.crt
