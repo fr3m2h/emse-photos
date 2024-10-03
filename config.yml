@@ -1,5 +1,5 @@
 server:
-  port: 3000
+  port: 8888
   read_timeout: 6s
   write_timeout: 12s
   request_context_timeout: 12s

@@ -17,39 +17,20 @@ func Service(cfg handlers.Config) http.Handler {
 	r := chi.NewRouter()
 	loadGlobalMiddlewares(r, cfg)
 
-	// r.Group(func(r chi.Router) {
-	//
-	// 	// Rate limiter for all routes related to login and signup
-	// 	r.Use(httprate.Limit(
-	// 		10,
-	// 		time.Minute,
-	// 		httprate.WithKeyFuncs(httprate.KeyByIP, httprate.KeyByEndpoint),
-	// 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-	// 			http.Error(w, "Too many requests", http.StatusTooManyRequests)
-	// 		}),
-	// 	))
-	// 	r.Post("/signup", cfg.HandlerSignup)
-	//
-	// 	// r.Post("/login_first_stage", cfg.HandlerLoginUserFirstStage)
-	// 	// r.Get("/refresh", cfg.HandlerRefreshTokens)
-	//
-	// 	r.Group(func(r chi.Router) {
-	// 		r.Use(MidTokenRestricted(cfg))
-	// 		r.Get("/verify", cfg.ServeVerificationPage)
-	// 		r.Post("/verify", cfg.HandlerVerifyEmailToken)
-	// 		r.Post("/send_email", cfg.HandlerSendEmailToken)
-	//
-	// 		r.Post("/setup_totp", cfg.HandlerSetupTotpCreation)
-	// 		r.Post("/confirm_totp", cfg.HandlerSetupTotpConfirmation)
-	// 		r.Post("/login_second_stage", cfg.HandlerLoginUserSecondStage)
-	// 	})
-	// 	r.Group(func(r chi.Router) {
-	// 		r.Use(AuthRestricted(cfg))
-	// 		r.Get("/logout", cfg.HandlerLogoutUser)
-	// 		r.Post("/change_password", cfg.HandlerUpdateUserPasswordWithOldPassword)
-	//
-	// 	})
-	// })
+	r.Group(func(r chi.Router) {
+
+		r.Get("/", cfg.ServeLandingPageHandler)
+
+		// r.Post("/login_first_stage", cfg.HandlerLoginUserFirstStage)
+		// r.Get("/refresh", cfg.HandlerRefreshTokens)
+
+		// r.Group(func(r chi.Router) {
+		// 	r.Use(AuthRestricted(cfg))
+		// 	r.Get("/logout", cfg.HandlerLogoutUser)
+		// 	r.Post("/change_password", cfg.HandlerUpdateUserPasswordWithOldPassword)
+		//
+		// })
+	})
 	return r
 }
 

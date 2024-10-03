@@ -1,6 +1,0 @@
-<form hx-post="/signup/confirm">
-    <input type="text" name="otp" pattern="[A-Z]{6}" maxlength="6" oninput="this.value = this.value.toUpperCase()">
-    <input type="hidden" name="email" value="{{.EMAIL}}">
-    <input type="hidden" name="csrf_token" value="{{.CSRF_TOKEN}}">
-    <button type="submit" hx-trigger="keyup changed delay:500ms" hx-get="/signup/confirm">Submit</button>
-</form>
