@@ -20,8 +20,22 @@ func main() {
 		log.Fatalf("error initialising handlers config: %v\n", err)
 	}
 
+	dbCtx, dbCtxCancel := context.WithTimeout(context.Background(), 8*time.Second)
+	t := time.Now()
+	err = cfg.DB.PingContext(dbCtx)
+	if err != nil {
+		log.Fatalf("error pinging to database: %v\n", err)
+	}
+	dbCtxCancel()
+	if cfg.DevMode.Enabled {
+		log.Printf("using dev database\n")
+	} else {
+		log.Printf("using prod database\n")
+	}
+	log.Printf("pinged database in %s\n", time.Since(t).String())
+
 	server := &http.Server{
-		Addr:           fmt.Sprintf("0.0.0.0:%d", cfg.Server.Port),
+		Addr:           fmt.Sprintf("127.0.0.1:%d", cfg.Server.Port),
 		Handler:        routes.Service(cfg),
 		ReadTimeout:    cfg.Server.ReadTimeout,
 		WriteTimeout:   cfg.Server.WriteTimeout,
@@ -50,6 +64,11 @@ func main() {
 		err := server.Shutdown(shutdownCtx)
 		if err != nil {
 			log.Fatalf("error shutting down server: %v\n", err)
+		}
+		err = cfg.DB.Close()
+		if err != nil {
+			log.Fatalf("error closing database: %v\n", err)
+
 		}
 		shutdownCtxCancel()
 		serverCtxCancel()

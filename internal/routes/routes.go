@@ -19,7 +19,9 @@ func Service(cfg handlers.Config) http.Handler {
 
 	r.Group(func(r chi.Router) {
 
-		r.Get("/", cfg.ServeLandingPageHandler)
+		// r.Use(middlewares.AuthRestricted(cfg))
+		r.Get(cfg.Routes.Landing, cfg.ServeLandingPageHandler)
+		r.Get(cfg.Routes.CasCallback, cfg.CasCallbackHandler)
 
 		// r.Post("/login_first_stage", cfg.HandlerLoginUserFirstStage)
 		// r.Get("/refresh", cfg.HandlerRefreshTokens)
@@ -63,7 +65,7 @@ func loadGlobalMiddlewares(r *chi.Mux, cfg handlers.Config) {
 	))
 	// Rate limiter for all routes
 	r.Use(httprate.Limit(
-		30,
+		60,
 		time.Minute,
 		httprate.WithKeyFuncs(httprate.KeyByIP, httprate.KeyByEndpoint),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {

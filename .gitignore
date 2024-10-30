@@ -1,5 +1,6 @@
 config.yml
 bin/*
+mock-cas-server/*
 .tmp/*
 .air*
 *.crt
