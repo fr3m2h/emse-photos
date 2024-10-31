@@ -33,10 +33,12 @@ CREATE TABLE events (
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     event_date DATETIME NOT NULL,
-
     creation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (event_id)
+    parent_event_id INT UNSIGNED,
+
+    PRIMARY KEY (event_id),
+    FOREIGN KEY (parent_event_id) REFERENCES events(event_id)
 );
 
 CREATE TABLE photos (

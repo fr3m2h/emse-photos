@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Photos EMSE</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background-color: #f5f5f5;
+            color: #333;
+            overflow: hidden;
+        }
+
+        .navbar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+        }
+
+        .navbar h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .nav-item {
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .nav-item:hover {
+            color: #3498db;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .event-box {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .event-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .photo-item {
+            margin-bottom: 10px;
+        }
+
+        .photo {
+            width: 100%;
+            border-radius: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #555;
+            font-style: italic;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .navbar {
+                width: 100%;
+                padding: 10px;
+                align-items: center;
+            }
+
+            .navbar h1 {
+                font-size: 20px;
+                margin-bottom: 10px;
+            }
+
+            .nav-item {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+
+            .content {
+                padding: 10px;
+            }
+
+            .events-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+
+            .event-box {
+                padding: 15px;
+            }
+        }
+    </style>
+    <script src="https://unpkg.com/htmx.org@1.9.0"></script>
+</head>
+
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="navbar">
+        <h1>Photos EMSE</h1>
+        <div class="nav-item">Accueil</div>
+        <div class="nav-item">Événements</div>
+        <div class="nav-item">Paramètres</div>
+        <div class="nav-item">Déconnexion</div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content">
+        <!-- Events Grid (Initial View) -->
+        <div class="events-grid">
+            <div class="event-box" hx-get="/photos?event_id=1" hx-target=".content" hx-trigger="click">
+                <h3>Événement 1</h3>
+            </div>
+            <div class="event-box" hx-get="/photos?event_id=2" hx-target=".content" hx-trigger="click">
+                <h3>Événement 2</h3>
+            </div>
+            <div class="event-box" hx-get="/photos?event_id=3" hx-target=".content" hx-trigger="click">
+                <h3>Événement 3</h3>
+            </div>
+            <!-- Add more event boxes as needed -->
+        </div>
+    </div>
+</body>
+
+</html>

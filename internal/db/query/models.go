@@ -54,11 +54,12 @@ func (ns NullUsersBusinessCategory) Value() (driver.Value, error) {
 }
 
 type Event struct {
-	EventID      uint32
-	Name         string
-	Description  string
-	EventDate    time.Time
-	CreationDate sql.NullTime
+	EventID       uint32
+	Name          string
+	Description   string
+	EventDate     time.Time
+	CreationDate  sql.NullTime
+	ParentEventID sql.NullInt32
 }
 
 type Photo struct {

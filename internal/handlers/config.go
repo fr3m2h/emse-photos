@@ -129,7 +129,7 @@ func New() (cfg Config, err error) {
 		err = fmt.Errorf("error unmarshalling config file: %v", err)
 		return
 	}
-	cfg.Templates, err = template.ParseGlob("internal/templates/*.html")
+	cfg.Templates, err = template.ParseGlob("assets/templates/*.html")
 	if err != nil {
 		err = fmt.Errorf("error parsing templates: %v", err)
 		return

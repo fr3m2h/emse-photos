@@ -7,6 +7,8 @@ package query
 
 import (
 	"context"
+	"database/sql"
+	"time"
 )
 
 const attemptCreatingUser = `-- name: AttemptCreatingUser :exec
@@ -32,6 +34,43 @@ func (q *Queries) AttemptCreatingUser(ctx context.Context, arg AttemptCreatingUs
 	return err
 }
 
+const createEvent = `-- name: CreateEvent :exec
+INSERT INTO events (name, description, event_date, parent_event_id)
+VALUES (?, ?, ?, ?)
+`
+
+type CreateEventParams struct {
+	Name          string
+	Description   string
+	EventDate     time.Time
+	ParentEventID sql.NullInt32
+}
+
+func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error {
+	_, err := q.db.ExecContext(ctx, createEvent,
+		arg.Name,
+		arg.Description,
+		arg.EventDate,
+		arg.ParentEventID,
+	)
+	return err
+}
+
+const createPhoto = `-- name: CreatePhoto :exec
+INSERT INTO photos (path_to_photo, event_id)
+VALUES (?, ?)
+`
+
+type CreatePhotoParams struct {
+	PathToPhoto string
+	EventID     uint32
+}
+
+func (q *Queries) CreatePhoto(ctx context.Context, arg CreatePhotoParams) error {
+	_, err := q.db.ExecContext(ctx, createPhoto, arg.PathToPhoto, arg.EventID)
+	return err
+}
+
 const createSession = `-- name: CreateSession :exec
 INSERT INTO sessions (user_id, session_token)
 VALUES (?, ?)
@@ -47,6 +86,24 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 	return err
 }
 
+const deleteEvent = `-- name: DeleteEvent :exec
+DELETE FROM events WHERE event_id = ?
+`
+
+func (q *Queries) DeleteEvent(ctx context.Context, eventID uint32) error {
+	_, err := q.db.ExecContext(ctx, deleteEvent, eventID)
+	return err
+}
+
+const deletePhoto = `-- name: DeletePhoto :exec
+DELETE FROM photos WHERE photo_id = ?
+`
+
+func (q *Queries) DeletePhoto(ctx context.Context, photoID uint32) error {
+	_, err := q.db.ExecContext(ctx, deletePhoto, photoID)
+	return err
+}
+
 const deleteSessionWithToken = `-- name: DeleteSessionWithToken :exec
 DELETE FROM sessions WHERE session_token = ?
 `
@@ -54,6 +111,128 @@ DELETE FROM sessions WHERE session_token = ?
 func (q *Queries) DeleteSessionWithToken(ctx context.Context, sessionToken string) error {
 	_, err := q.db.ExecContext(ctx, deleteSessionWithToken, sessionToken)
 	return err
+}
+
+const getEvents = `-- name: GetEvents :many
+SELECT name, description, event_date, creation_date, parent_event_id
+FROM events
+`
+
+type GetEventsRow struct {
+	Name          string
+	Description   string
+	EventDate     time.Time
+	CreationDate  sql.NullTime
+	ParentEventID sql.NullInt32
+}
+
+func (q *Queries) GetEvents(ctx context.Context) ([]GetEventsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getEvents)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetEventsRow
+	for rows.Next() {
+		var i GetEventsRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Description,
+			&i.EventDate,
+			&i.CreationDate,
+			&i.ParentEventID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPhoto = `-- name: GetPhoto :one
+SELECT photo_id, path_to_photo, creation_date, event_id FROM photos WHERE photo_id = ?
+`
+
+func (q *Queries) GetPhoto(ctx context.Context, photoID uint32) (Photo, error) {
+	row := q.db.QueryRowContext(ctx, getPhoto, photoID)
+	var i Photo
+	err := row.Scan(
+		&i.PhotoID,
+		&i.PathToPhoto,
+		&i.CreationDate,
+		&i.EventID,
+	)
+	return i, err
+}
+
+const getPhotosByEventID = `-- name: GetPhotosByEventID :many
+SELECT photo_id, path_to_photo, creation_date, event_id FROM photos WHERE event_id = ?
+`
+
+func (q *Queries) GetPhotosByEventID(ctx context.Context, eventID uint32) ([]Photo, error) {
+	rows, err := q.db.QueryContext(ctx, getPhotosByEventID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Photo
+	for rows.Next() {
+		var i Photo
+		if err := rows.Scan(
+			&i.PhotoID,
+			&i.PathToPhoto,
+			&i.CreationDate,
+			&i.EventID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPhotosSortedByDate = `-- name: GetPhotosSortedByDate :many
+SELECT photo_id, path_to_photo, creation_date, event_id FROM photos ORDER BY creation_date DESC
+`
+
+func (q *Queries) GetPhotosSortedByDate(ctx context.Context) ([]Photo, error) {
+	rows, err := q.db.QueryContext(ctx, getPhotosSortedByDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Photo
+	for rows.Next() {
+		var i Photo
+		if err := rows.Scan(
+			&i.PhotoID,
+			&i.PathToPhoto,
+			&i.CreationDate,
+			&i.EventID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getSessionWithToken = `-- name: GetSessionWithToken :one
@@ -168,4 +347,45 @@ func (q *Queries) GetUserWithSession(ctx context.Context, sessionToken string) (
 		&i.DepartmentNumber,
 	)
 	return i, err
+}
+
+const updateEvent = `-- name: UpdateEvent :exec
+UPDATE events
+SET name = ?, description = ?, event_date = ?, parent_event_id = ?
+WHERE event_id = ?
+`
+
+type UpdateEventParams struct {
+	Name          string
+	Description   string
+	EventDate     time.Time
+	ParentEventID sql.NullInt32
+	EventID       uint32
+}
+
+func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) error {
+	_, err := q.db.ExecContext(ctx, updateEvent,
+		arg.Name,
+		arg.Description,
+		arg.EventDate,
+		arg.ParentEventID,
+		arg.EventID,
+	)
+	return err
+}
+
+const updatePhotoPath = `-- name: UpdatePhotoPath :exec
+UPDATE photos
+SET path_to_photo = ?
+WHERE photo_id = ?
+`
+
+type UpdatePhotoPathParams struct {
+	PathToPhoto string
+	PhotoID     uint32
+}
+
+func (q *Queries) UpdatePhotoPath(ctx context.Context, arg UpdatePhotoPathParams) error {
+	_, err := q.db.ExecContext(ctx, updatePhotoPath, arg.PathToPhoto, arg.PhotoID)
+	return err
 }
