@@ -4,10 +4,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html/template"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"photos/internal/db"
 	"time"
 
+	"github.com/gorilla/securecookie"
 	"gopkg.in/yaml.v3"
 )
 
@@ -23,7 +27,7 @@ type Config struct {
 		CookieMaxAge   time.Duration `yaml:"cookie_max_age"`
 		CookieSecure   bool          `yaml:"cookie_secure"`
 		CookieHTTPOnly bool          `yaml:"cookie_http_only"`
-		CookieSameSite string        `yaml:"cookie_same_site"`
+		CookieSameSite http.SameSite `yaml:"cookie_same_site"`
 	} `yaml:"dev_mode"`
 	Server struct {
 		Port                  int           `yaml:"port"`
@@ -43,15 +47,16 @@ type Config struct {
 			CookieMaxAge   time.Duration `yaml:"cookie_max_age"`
 			CookieSecure   bool          `yaml:"cookie_secure"`
 			CookieHTTPOnly bool          `yaml:"cookie_http_only"`
-			CookieSameSite string        `yaml:"cookie_same_site"`
+			CookieSameSite http.SameSite `yaml:"cookie_same_site"`
 		} `yaml:"csrf_token"`
 		Session struct {
-			Secret         secretKey     `yaml:"secret"`
+			Secret         secretKey `yaml:"secret"`
+			SecureCookie   *securecookie.SecureCookie
 			CookieName     string        `yaml:"cookie_name"`
 			CookieMaxAge   time.Duration `yaml:"cookie_max_age"`
 			CookieSecure   bool          `yaml:"cookie_secure"`
 			CookieHTTPOnly bool          `yaml:"cookie_http_only"`
-			CookieSameSite string        `yaml:"cookie_same_site"`
+			CookieSameSite http.SameSite `yaml:"cookie_same_site"`
 		} `yaml:"session"`
 	} `yaml:"security"`
 	DB struct {
@@ -91,9 +96,15 @@ type Config struct {
 	} `yaml:"base_urls"`
 	Routes struct {
 		Landing     string `yaml:"landing"`
+		Login       string `yaml:"login"`
 		CasCallback string `yaml:"cas_callback"`
+
+		Dashboard string `yaml:"dashboard"`
+		Logout    string `yaml:"logout"`
 	} `yaml:"routes"`
-	Templates *template.Template
+
+	HttpClient *http.Client
+	Templates  *template.Template
 }
 
 func New() (cfg Config, err error) {
@@ -137,6 +148,9 @@ func New() (cfg Config, err error) {
 		}
 
 	}
+	cfg.HttpClient = newHTTPClient(6*time.Second, false, false, false, nil)
+	cfg.Security.Session.SecureCookie = securecookie.New(cfg.Security.Session.Secret, nil)
+
 	return
 }
 
@@ -152,4 +166,30 @@ func (k *secretKey) UnmarshalYAML(node *yaml.Node) error {
 	}
 	*k = ba
 	return nil
+}
+
+func newHTTPClient(requestTimeout time.Duration, useCookie, disableKeepAlive, disableCompression bool, proxyFunc func(*http.Request) (*url.URL, error)) *http.Client {
+	transport := &http.Transport{
+		MaxIdleConns:        0,
+		MaxIdleConnsPerHost: 10 ^ 9,
+		MaxConnsPerHost:     0,
+		IdleConnTimeout:     10 * time.Second,
+		DisableCompression:  disableCompression,
+		DisableKeepAlives:   disableKeepAlive,
+	}
+	if proxyFunc == nil {
+		transport.Proxy = http.ProxyFromEnvironment
+	}
+	client := http.Client{
+		Timeout:   requestTimeout,
+		Transport: transport,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	if useCookie {
+		jar, _ := cookiejar.New(nil)
+		client.Jar = jar
+	}
+	return &client
 }

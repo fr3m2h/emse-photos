@@ -17,14 +17,16 @@ func Service(cfg handlers.Config) http.Handler {
 	r := chi.NewRouter()
 	loadGlobalMiddlewares(r, cfg)
 
-	r.Group(func(r chi.Router) {
+	r.Get(cfg.Routes.Landing, cfg.ServeLandingHandler)
+	r.Get(cfg.Routes.Login, cfg.LoginHandler)
+	r.Get(cfg.Routes.CasCallback, cfg.CasCallbackHandler)
 
-		// r.Use(middlewares.AuthRestricted(cfg))
-		r.Get(cfg.Routes.Landing, cfg.ServeLandingPageHandler)
-		r.Get(cfg.Routes.CasCallback, cfg.CasCallbackHandler)
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.AuthRestricted(cfg))
+		r.Get(cfg.Routes.Dashboard, cfg.ServeDashboardHandler)
+		r.Get(cfg.Routes.Logout, cfg.LogoutHandler)
 
 		// r.Post("/login_first_stage", cfg.HandlerLoginUserFirstStage)
-		// r.Get("/refresh", cfg.HandlerRefreshTokens)
 
 		// r.Group(func(r chi.Router) {
 		// 	r.Use(AuthRestricted(cfg))
@@ -58,7 +60,7 @@ func loadGlobalMiddlewares(r *chi.Mux, cfg handlers.Config) {
 		csrf.MaxAge(int(cfg.Security.CsrfToken.CookieMaxAge.Seconds())),
 		csrf.HttpOnly(cfg.Security.CsrfToken.CookieHTTPOnly),
 		csrf.Secure(cfg.Security.CsrfToken.CookieSecure),
-		csrf.SameSite(csrf.SameSiteStrictMode),
+		csrf.SameSite(csrf.SameSiteMode(cfg.Security.CsrfToken.CookieSameSite)),
 		csrf.RequestHeader(cfg.Security.CsrfToken.HeaderName),
 		csrf.FieldName(cfg.Security.CsrfToken.FieldName),
 		csrf.CookieName(cfg.Security.CsrfToken.CookieName),

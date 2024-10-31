@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func respondWithMessage(w http.ResponseWriter, error string, status int) {
+func RespondWithMessage(w http.ResponseWriter, error string, status int) {
 	if status >= 500 {
 		log.Printf("5xx error: %s", error)
 		http.Error(w, "Internal server error", status)
@@ -20,7 +20,7 @@ func renderTemplate(w http.ResponseWriter, t *template.Template, name string, da
 	w.Header().Set("Content-Type", "text/html")
 	err := t.ExecuteTemplate(w, name, data)
 	if err != nil {
-		respondWithMessage(w, fmt.Sprintf("error executing template: %v", err), http.StatusInternalServerError)
+		RespondWithMessage(w, fmt.Sprintf("error executing template: %v", err), http.StatusInternalServerError)
 		return
 	}
 }

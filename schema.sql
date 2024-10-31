@@ -2,15 +2,15 @@ CREATE TABLE users (
     user_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
 
     signup_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_signin_date DATETIME,
+    last_signin_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     signin_locked BOOL NOT NULL DEFAULT false,
     signin_locked_date DATETIME,
 
     is_admin BOOL NOT NULL DEFAULT false,
 
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
     full_name VARCHAR(255) NOT NULL,
-    business_category VARCHAR(255) NOT NULL,
+    business_category ENUM('STUDENT', 'TEACHER') NOT NULL,
     department_number VARCHAR(255) NOT NULL,
 
     PRIMARY KEY (user_id)
@@ -21,12 +21,22 @@ CREATE TABLE sessions (
 
     user_id INT UNSIGNED NOT NULL,
     creation_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    session_token VARCHAR(255) NOT NULL,
-    user_agent VARCHAR(255) NOT NULL,
-    ip_address VARCHAR(40) NOT NULL,
+    session_token VARCHAR(255) NOT NULL UNIQUE,
 
     PRIMARY KEY (session_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE events (
+    event_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    event_date DATETIME NOT NULL,
+
+    creation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (event_id)
 );
 
 CREATE TABLE photos (
@@ -39,16 +49,6 @@ CREATE TABLE photos (
 
     PRIMARY KEY (photo_id),
     FOREIGN KEY (event_id) REFERENCES events(event_id)
-);
-
-CREATE TABLE events (
-    event_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    creation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (event_id)
 );
 
 CREATE TABLE user_folders (

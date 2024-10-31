@@ -6,13 +6,58 @@ package query
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"fmt"
 	"time"
 )
+
+type UsersBusinessCategory string
+
+const (
+	UsersBusinessCategorySTUDENT UsersBusinessCategory = "STUDENT"
+	UsersBusinessCategoryTEACHER UsersBusinessCategory = "TEACHER"
+)
+
+func (e *UsersBusinessCategory) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UsersBusinessCategory(s)
+	case string:
+		*e = UsersBusinessCategory(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UsersBusinessCategory: %T", src)
+	}
+	return nil
+}
+
+type NullUsersBusinessCategory struct {
+	UsersBusinessCategory UsersBusinessCategory
+	Valid                 bool // Valid is true if UsersBusinessCategory is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUsersBusinessCategory) Scan(value interface{}) error {
+	if value == nil {
+		ns.UsersBusinessCategory, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UsersBusinessCategory.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUsersBusinessCategory) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.UsersBusinessCategory), nil
+}
 
 type Event struct {
 	EventID      uint32
 	Name         string
 	Description  string
+	EventDate    time.Time
 	CreationDate sql.NullTime
 }
 
@@ -34,20 +79,18 @@ type Session struct {
 	UserID       uint32
 	CreationDate time.Time
 	SessionToken string
-	UserAgent    string
-	IpAddress    string
 }
 
 type User struct {
 	UserID           uint32
 	SignupDate       time.Time
-	LastSigninDate   sql.NullTime
+	LastSigninDate   time.Time
 	SigninLocked     bool
 	SigninLockedDate sql.NullTime
 	IsAdmin          bool
 	Email            string
 	FullName         string
-	BusinessCategory string
+	BusinessCategory UsersBusinessCategory
 	DepartmentNumber string
 }
 

@@ -7,9 +7,72 @@ package query
 
 import (
 	"context"
-	"database/sql"
-	"time"
 )
+
+const attemptCreatingUser = `-- name: AttemptCreatingUser :exec
+INSERT INTO users (email, full_name, business_category, department_number)
+VALUES (?, ?, ?, ?)
+ON DUPLICATE KEY UPDATE user_id = LAST_INSERT_ID(user_id)
+`
+
+type AttemptCreatingUserParams struct {
+	Email            string
+	FullName         string
+	BusinessCategory UsersBusinessCategory
+	DepartmentNumber string
+}
+
+func (q *Queries) AttemptCreatingUser(ctx context.Context, arg AttemptCreatingUserParams) error {
+	_, err := q.db.ExecContext(ctx, attemptCreatingUser,
+		arg.Email,
+		arg.FullName,
+		arg.BusinessCategory,
+		arg.DepartmentNumber,
+	)
+	return err
+}
+
+const createSession = `-- name: CreateSession :exec
+INSERT INTO sessions (user_id, session_token)
+VALUES (?, ?)
+`
+
+type CreateSessionParams struct {
+	UserID       uint32
+	SessionToken string
+}
+
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
+	_, err := q.db.ExecContext(ctx, createSession, arg.UserID, arg.SessionToken)
+	return err
+}
+
+const deleteSessionWithToken = `-- name: DeleteSessionWithToken :exec
+DELETE FROM sessions WHERE session_token = ?
+`
+
+func (q *Queries) DeleteSessionWithToken(ctx context.Context, sessionToken string) error {
+	_, err := q.db.ExecContext(ctx, deleteSessionWithToken, sessionToken)
+	return err
+}
+
+const getSessionWithToken = `-- name: GetSessionWithToken :one
+SELECT session_id, user_id, creation_date, session_token
+FROM sessions
+WHERE session_token = ?
+`
+
+func (q *Queries) GetSessionWithToken(ctx context.Context, sessionToken string) (Session, error) {
+	row := q.db.QueryRowContext(ctx, getSessionWithToken, sessionToken)
+	var i Session
+	err := row.Scan(
+		&i.SessionID,
+		&i.UserID,
+		&i.CreationDate,
+		&i.SessionToken,
+	)
+	return i, err
+}
 
 const getUser = `-- name: GetUser :one
 SELECT user_id, signup_date, last_signin_date, signin_locked, signin_locked_date, is_admin, email, full_name, business_category, department_number
@@ -19,6 +82,28 @@ WHERE user_id = ?
 
 func (q *Queries) GetUser(ctx context.Context, userID uint32) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, userID)
+	var i User
+	err := row.Scan(
+		&i.UserID,
+		&i.SignupDate,
+		&i.LastSigninDate,
+		&i.SigninLocked,
+		&i.SigninLockedDate,
+		&i.IsAdmin,
+		&i.Email,
+		&i.FullName,
+		&i.BusinessCategory,
+		&i.DepartmentNumber,
+	)
+	return i, err
+}
+
+const getUserLastInsertID = `-- name: GetUserLastInsertID :one
+SELECT user_id, signup_date, last_signin_date, signin_locked, signin_locked_date, is_admin, email, full_name, business_category, department_number FROM users WHERE user_id = LAST_INSERT_ID()
+`
+
+func (q *Queries) GetUserLastInsertID(ctx context.Context) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserLastInsertID)
 	var i User
 	err := row.Scan(
 		&i.UserID,
@@ -60,35 +145,16 @@ func (q *Queries) GetUserWithEmail(ctx context.Context, email string) (User, err
 }
 
 const getUserWithSession = `-- name: GetUserWithSession :one
-SELECT u.user_id, u.signup_date, u.last_signin_date, u.signin_locked, u.signin_locked_date, u.is_admin, u.email, u.full_name, u.business_category, u.department_number, s.session_id, s.user_id, s.creation_date, s.session_token, s.user_agent, s.ip_address
+SELECT u.user_id, u.signup_date, u.last_signin_date, u.signin_locked, u.signin_locked_date, u.is_admin, u.email, u.full_name, u.business_category, u.department_number
 FROM users u
 JOIN sessions s
 ON s.user_id = u.user_id
 WHERE s.session_token = ?
 `
 
-type GetUserWithSessionRow struct {
-	UserID           uint32
-	SignupDate       time.Time
-	LastSigninDate   sql.NullTime
-	SigninLocked     bool
-	SigninLockedDate sql.NullTime
-	IsAdmin          bool
-	Email            string
-	FullName         string
-	BusinessCategory string
-	DepartmentNumber string
-	SessionID        uint32
-	UserID_2         uint32
-	CreationDate     time.Time
-	SessionToken     string
-	UserAgent        string
-	IpAddress        string
-}
-
-func (q *Queries) GetUserWithSession(ctx context.Context, sessionToken string) (GetUserWithSessionRow, error) {
+func (q *Queries) GetUserWithSession(ctx context.Context, sessionToken string) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserWithSession, sessionToken)
-	var i GetUserWithSessionRow
+	var i User
 	err := row.Scan(
 		&i.UserID,
 		&i.SignupDate,
@@ -100,12 +166,6 @@ func (q *Queries) GetUserWithSession(ctx context.Context, sessionToken string) (
 		&i.FullName,
 		&i.BusinessCategory,
 		&i.DepartmentNumber,
-		&i.SessionID,
-		&i.UserID_2,
-		&i.CreationDate,
-		&i.SessionToken,
-		&i.UserAgent,
-		&i.IpAddress,
 	)
 	return i, err
 }
