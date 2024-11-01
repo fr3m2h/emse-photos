@@ -17,6 +17,7 @@ func Service(cfg handlers.Config) http.Handler {
 	r := chi.NewRouter()
 	loadGlobalMiddlewares(r, cfg)
 
+	r.Get(cfg.Routes.Favicon, handlers.ServeFaviconHandler)
 	r.Get(cfg.Routes.Landing, cfg.ServeLandingHandler)
 	r.Get(cfg.Routes.Login, cfg.LoginHandler)
 	r.Get(cfg.Routes.CasCallback, cfg.CasCallbackHandler)

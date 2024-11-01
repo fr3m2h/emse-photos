@@ -95,6 +95,7 @@ type Config struct {
 		} `yaml:"dev"`
 	} `yaml:"base_urls"`
 	Routes struct {
+		Favicon     string `yaml:"favicon"`
 		Landing     string `yaml:"landing"`
 		Login       string `yaml:"login"`
 		CasCallback string `yaml:"cas_callback"`
