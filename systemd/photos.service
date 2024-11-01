@@ -1,18 +1,13 @@
 [Unit]
-Description=Go Photos Service
+Description=Go Photos Service with Inotify Watcher
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/path/to/the/binary
-WorkingDirectory=/path/to/the/directory/of/the/binary
+ExecStart=/path/to/watch_and_restart.sh
 Restart=always
 RestartSec=5
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-# Restart if there are changes in the binary's directory
-InotifyWatching=/path/to/the/directory/of/the/binary
-ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
 WantedBy=multi-user.target
