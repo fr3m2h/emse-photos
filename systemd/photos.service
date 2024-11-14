@@ -4,7 +4,8 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/path/to/watch_and_restart.sh
+WorkingDirectory=/path/to/the/directory/lesroots2024
+ExecStart=/path/to/the/directory/lesroots2024/scripts/watch_and_restart.sh
 Restart=always
 RestartSec=5
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
