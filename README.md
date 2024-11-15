@@ -39,29 +39,31 @@
 
 ## Prerequisites
 
-You can [download](https://github.com/amitmerchant1990/electron-markdownify/releases/tag/v1.2.0) the latest installable version of Markdownify for Windows, macOS and Linux.
+* [Download Git](https://git-scm.com/downloads) to clone the repository.
+
+* [Download Go](https://go.dev/dl/) (version 1.23.1 or newer recommended) from the official Go website to compile, run and test this project.
+* Download and install either [*MariaDB*](https://mariadb.org/download) or [*MySQL*](https://dev.mysql.com/downloads/mysql/) for the photos database.
 
 ## Getting started
 
-To clone and run this application, you'll need [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. From your command line:
+To clone and run this application, you'll need [Git](https://git-scm.com) and [Go](https://go.dev/) installed on your computer. From your command line:
 
 ```bash
 # Clone this repository
-$ git clone https://github.com/amitmerchant1990/electron-markdownify
+$ git clone https://github.com/fr3m2h/photos
 
 # Go into the repository
-$ cd electron-markdownify
+$ cd photos
 
 # Install dependencies
-$ npm install
+$ go mod tidy
 
-# Run the app
-$ npm start
+# [Run|Build] the photos server
+$ go [run|build] ./cmd/photos_server/launch_server.go
+
+# Test the app
+go test -cover ./...
 ```
-
-> **Note**
-> If you're using Linux Bash for Windows, [see this guide](https://www.howtogeek.com/261575/how-to-run-graphical-linux-desktop-applications-from-windows-10s-bash-shell/) or use `node` from the command prompt.
-
 
 ## License
 

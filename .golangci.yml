@@ -5,8 +5,6 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    # - staticcheck
-    # - unused
     - bidichk
     - bodyclose
     - containedctx
