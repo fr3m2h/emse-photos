@@ -57,14 +57,14 @@ func loadGlobalMiddlewares(r *chi.Mux, cfg handlers.Config) {
 	r.Use(middleware.Timeout(cfg.Server.RequestContextTimeout))
 	r.Use(middlewares.MaxBodySize(cfg.Server.MaxBodySize))
 	r.Use(csrf.Protect(
-		cfg.Security.CsrfToken.Secret,
-		csrf.MaxAge(int(cfg.Security.CsrfToken.CookieMaxAge.Seconds())),
-		csrf.HttpOnly(cfg.Security.CsrfToken.CookieHTTPOnly),
-		csrf.Secure(cfg.Security.CsrfToken.CookieSecure),
-		csrf.SameSite(csrf.SameSiteMode(cfg.Security.CsrfToken.CookieSameSite)),
-		csrf.RequestHeader(cfg.Security.CsrfToken.HeaderName),
-		csrf.FieldName(cfg.Security.CsrfToken.FieldName),
-		csrf.CookieName(cfg.Security.CsrfToken.CookieName),
+		cfg.Security.Csrf.Secret,
+		csrf.MaxAge(int(cfg.Security.Csrf.CookieMaxAge.Seconds())),
+		csrf.HttpOnly(cfg.Security.Csrf.CookieHTTPOnly),
+		csrf.Secure(cfg.Security.Csrf.CookieSecure),
+		csrf.SameSite(csrf.SameSiteMode(cfg.Security.Csrf.CookieSameSite)),
+		csrf.RequestHeader(cfg.Security.Csrf.HeaderName),
+		csrf.FieldName(cfg.Security.Csrf.FieldName),
+		csrf.CookieName(cfg.Security.Csrf.CookieName),
 	))
 	// Rate limiter for all routes
 	r.Use(httprate.Limit(

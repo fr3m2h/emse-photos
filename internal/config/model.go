@@ -63,8 +63,8 @@ type SessionToken struct {
 }
 
 type Security struct {
-	CsrfToken CsrfToken    `yaml:"csrf_token"`
-	Session   SessionToken `yaml:"session"`
+	Csrf    CsrfToken    `yaml:"csrf"`
+	Session SessionToken `yaml:"session"`
 }
 
 type DSN struct {

@@ -8,8 +8,8 @@ require (
 	github.com/go-chi/httprate v0.14.1
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/gorilla/csrf v1.7.2
-	gopkg.in/yaml.v3 v3.0.1
 	github.com/gorilla/securecookie v1.1.2
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

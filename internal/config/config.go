@@ -30,7 +30,7 @@ func defaultConfig() (Config, error) {
 
 	defaultCfg := Config{
 		DevMode: DevMode{
-			Enabled:        false,
+			Enabled:        true,
 			Username:       "default_dev_mode_username",
 			Password:       "default_dev_mode_password",
 			Secret:         s1,
@@ -50,7 +50,7 @@ func defaultConfig() (Config, error) {
 			MaxBodySize:           1024,
 		},
 		Security: Security{
-			CsrfToken: CsrfToken{
+			Csrf: CsrfToken{
 				Token: Token{
 					Secret:         s2,
 					CookieName:     "csrf_token",
