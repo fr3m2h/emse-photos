@@ -17,27 +17,32 @@ var (
 )
 
 func main() {
-	// Parse command-line arguments
 	flag.IntVar(&defaultPort, "port", 3000, "Port to run the server on")
 	flag.StringVar(&defaultTicket, "ticket", "ST-12345", "Default mock ticket")
 	flag.Parse()
 
-	// Create a new Chi router
 	r := chi.NewRouter()
 
-	// Middleware
-	r.Use(middleware.Logger)                    // Log each request
-	r.Use(middleware.Recoverer)                 // Recover from panics to prevent server crashes
-	r.Use(middleware.Timeout(10 * time.Second)) // Set request timeout
+	// Middlewares
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Timeout(10 * time.Second))
 
 	// Routes
 	r.Get("/cas/login", casLoginHandler)
 	r.Get("/cas/serviceValidate", casServiceValidateHandler)
 
-	// Start the server
-	addr := fmt.Sprintf(":%d", defaultPort)
-	fmt.Printf("Mock CAS server running on http://localhost%s\n", addr)
-	if err := http.ListenAndServe(addr, r); err != nil {
+	addr := fmt.Sprintf("127.0.0.1:%d", defaultPort)
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  10 * time.Second,
+	}
+
+	fmt.Printf("Mock CAS server running on: %s\n", addr)
+	if err := server.ListenAndServe(); err != nil {
 		fmt.Printf("Error starting server: %v\n", err)
 		os.Exit(1)
 	}
@@ -52,7 +57,7 @@ func casLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Mock CAS login page. Use /cas/login?service=<service-url> to log in."))
+	_, _ = w.Write([]byte("Mock CAS login page. Use /cas/login?service=<service-url> to log in."))
 }
 
 // Mock CAS serviceValidate endpoint
@@ -62,7 +67,7 @@ func casServiceValidateHandler(w http.ResponseWriter, r *http.Request) {
 
 	if ticket == defaultTicket && service != "" {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`
+		_, _ = w.Write([]byte(`
 <cas:serviceResponse xmlns:cas="http://www.yale.edu/tp/cas">
   <cas:authenticationSuccess>
     <cas:user>jdoe</cas:user>
@@ -79,7 +84,7 @@ func casServiceValidateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf(`
+	_, _ = w.Write([]byte(fmt.Sprintf(`
 <cas:serviceResponse xmlns:cas="http://www.yale.edu/tp/cas">
   <cas:authenticationFailure code="INVALID_TICKET">
     Ticket %s is not recognized

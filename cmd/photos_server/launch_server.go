@@ -2,20 +2,21 @@ package main
 
 import (
 	"context"
-	"photos/internal/handlers"
 
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"photos/internal/config"
+	"photos/internal/handlers"
 	"photos/internal/routes"
 	"syscall"
 	"time"
 )
 
 func main() {
-	cfg, err := handlers.New()
+	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("error initialising handlers config: %v\n", err)
 	}
@@ -36,7 +37,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:           fmt.Sprintf("127.0.0.1:%d", cfg.Server.Port),
-		Handler:        routes.Service(cfg),
+		Handler:        routes.Service(handlers.Config(cfg)),
 		ReadTimeout:    cfg.Server.ReadTimeout,
 		WriteTimeout:   cfg.Server.WriteTimeout,
 		IdleTimeout:    cfg.Server.IdleTimeout,

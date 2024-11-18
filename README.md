@@ -58,8 +58,9 @@ $ cd photos
 # Install dependencies
 $ go mod tidy
 
-# [Run|Build] the photos server
-$ go [run|build] ./cmd/photos_server/launch_server.go
+# [Run|Build] the photos or mock cas server
+$ go [run|build] -o bin/launch_photo_server ./cmd/photos_server/launch_server.go
+$ go [run|build] -o bin/launch_mock_cas_server ./cmd/cas_server/launch_server.go
 
 # Test the app
 go test -cover ./...

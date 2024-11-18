@@ -40,11 +40,11 @@ func (cfg Config) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	params := url.Values{}
 	casLoginUrlWithCallback := ""
 	if cfg.DevMode.Enabled {
-		params.Add("service", fmt.Sprintf("%s%s", cfg.BaseUrls.Dev.Service, cfg.Routes.CasCallback))
-		casLoginUrlWithCallback = fmt.Sprintf("%s/login?%s", cfg.BaseUrls.Dev.Cas, params.Encode())
+		params.Add("service", fmt.Sprintf("%s%s", cfg.BaseURLs.Dev.Service, cfg.Routes.CasCallback))
+		casLoginUrlWithCallback = fmt.Sprintf("%s/login?%s", cfg.BaseURLs.Dev.Cas, params.Encode())
 	} else {
-		params.Add("service", fmt.Sprintf("%s%s", cfg.BaseUrls.Prod.Service, cfg.Routes.CasCallback))
-		casLoginUrlWithCallback = fmt.Sprintf("%s/login?%s", cfg.BaseUrls.Prod.Cas, params.Encode())
+		params.Add("service", fmt.Sprintf("%s%s", cfg.BaseURLs.Prod.Service, cfg.Routes.CasCallback))
+		casLoginUrlWithCallback = fmt.Sprintf("%s/login?%s", cfg.BaseURLs.Prod.Cas, params.Encode())
 	}
 
 	cookie, err := r.Cookie(cfg.Security.Session.CookieName)
@@ -103,9 +103,9 @@ func (cfg Config) CasCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	//Now we have to validate the ticket with the CAS server
 	validationURL := ""
 	if cfg.DevMode.Enabled {
-		validationURL = fmt.Sprintf("%s/serviceValidate?service=%s&ticket=%s", cfg.BaseUrls.Dev.Cas, url.QueryEscape(cfg.BaseUrls.Dev.Service), url.QueryEscape(ticket))
+		validationURL = fmt.Sprintf("%s/serviceValidate?service=%s&ticket=%s", cfg.BaseURLs.Dev.Cas, url.QueryEscape(cfg.BaseURLs.Dev.Service), url.QueryEscape(ticket))
 	} else {
-		validationURL = fmt.Sprintf("%s/serviceValidate?service=%s&ticket=%s", cfg.BaseUrls.Prod.Cas, url.QueryEscape(cfg.BaseUrls.Prod.Service), url.QueryEscape(ticket))
+		validationURL = fmt.Sprintf("%s/serviceValidate?service=%s&ticket=%s", cfg.BaseURLs.Prod.Cas, url.QueryEscape(cfg.BaseURLs.Prod.Service), url.QueryEscape(ticket))
 	}
 
 	resp, err := cfg.HttpClient.Get(validationURL)

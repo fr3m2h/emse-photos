@@ -5,7 +5,10 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"photos/internal/config"
 )
+
+type Config config.Config
 
 func RespondWithMessage(w http.ResponseWriter, error string, status int) {
 	if status >= 500 {
