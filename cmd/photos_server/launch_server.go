@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"log/slog"
 
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,27 +13,45 @@ import (
 	"photos/internal/routes"
 	"syscall"
 	"time"
+
+	slogmulti "github.com/samber/slog-multi"
 )
 
 func main() {
-	cfg, err := config.Load()
+	logFile, err := os.Create("logs")
 	if err != nil {
-		log.Fatalf("error initialising handlers config: %v\n", err)
+		slog.Error("error creating file for logs", "error", err)
+	}
+	defer func() {
+		_ = logFile.Close()
+	}()
+	logger := slog.New(
+		slogmulti.Fanout(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}),
+			slog.NewJSONHandler(logFile, &slog.HandlerOptions{}),
+		),
+	)
+
+	cfg, err := config.Load(logger)
+	if err != nil {
+		logger.Error("error initialising handlers config", "error", err)
+		os.Exit(1)
 	}
 
 	dbCtx, dbCtxCancel := context.WithTimeout(context.Background(), 8*time.Second)
 	t := time.Now()
 	err = cfg.DB.PingContext(dbCtx)
 	if err != nil {
-		log.Fatalf("error pinging to database: %v\n", err)
+		logger.Error("error pinging to database", "error", err)
+		os.Exit(1)
 	}
 	dbCtxCancel()
 	if cfg.DevMode.Enabled {
-		log.Printf("using dev database\n")
+		logger.Info("using dev database")
 	} else {
-		log.Printf("using prod database\n")
+		logger.Info("using prod database")
 	}
-	log.Printf("pinged database in %s\n", time.Since(t).String())
+	logger.Info("pinged database", "latency", time.Since(t).String())
 
 	server := &http.Server{
 		Addr:           fmt.Sprintf("127.0.0.1:%d", cfg.Server.Port),
@@ -57,28 +75,32 @@ func main() {
 		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
-				log.Fatalf("graceful shutdown timed out: %v\n", shutdownCtx.Err())
+				logger.Error("graceful shutdown timed out", "error", shutdownCtx.Err())
+				os.Exit(1)
 			}
 		}()
 
 		// Trigger graceful shutdown
 		err := server.Shutdown(shutdownCtx)
 		if err != nil {
-			log.Fatalf("error shutting down server: %v\n", err)
+			logger.Error("error shutting down server", "error", err)
+			os.Exit(1)
 		}
 		err = cfg.DB.Close()
 		if err != nil {
-			log.Fatalf("error closing database: %v\n", err)
+			logger.Error("error closing database", "error", err)
+			os.Exit(1)
 
 		}
 		shutdownCtxCancel()
 		serverCtxCancel()
 	}()
 
-	log.Printf("starting server on %s\n", server.Addr)
+	logger.Info("starting server", "address", server.Addr)
 	err = server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		log.Fatalf("error starting server: %v\n", err)
+		logger.Error("error starting server", "error", err)
+		os.Exit(1)
 	}
 
 	// Wait for server context to be stopped

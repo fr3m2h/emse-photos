@@ -1,0 +1,4 @@
+{"time":"2024-12-04T17:17:14.704478746+01:00","level":"INFO","msg":"using config file","path":"config.yml"}
+{"time":"2024-12-04T17:17:14.708840037+01:00","level":"INFO","msg":"using dev database"}
+{"time":"2024-12-04T17:17:14.708908626+01:00","level":"INFO","msg":"pinged database","latency":"3.402225ms"}
+{"time":"2024-12-04T17:17:14.710125536+01:00","level":"INFO","msg":"starting server","address":"127.0.0.1:8888"}

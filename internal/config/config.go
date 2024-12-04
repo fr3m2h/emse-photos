@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"net/http"
 	"os"
 	"photos/internal/db"
@@ -23,22 +24,10 @@ func defaultConfig() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	s3, err := generateSecureHex(16)
-	if err != nil {
-		return Config{}, err
-	}
 
 	defaultCfg := Config{
 		DevMode: DevMode{
-			Enabled:        true,
-			Username:       "default_dev_mode_username",
-			Password:       "default_dev_mode_password",
-			Secret:         s1,
-			CookieName:     "dev_mode_token",
-			CookieMaxAge:   time.Hour,
-			CookieSecure:   true,
-			CookieHTTPOnly: true,
-			CookieSameSite: http.SameSiteStrictMode,
+			Enabled: true,
 		},
 		Server: Server{
 			Port:                  8080,
@@ -52,7 +41,7 @@ func defaultConfig() (Config, error) {
 		Security: Security{
 			Csrf: CsrfToken{
 				Token: Token{
-					Secret:         s2,
+					Secret:         s1,
 					CookieName:     "csrf_token",
 					CookieMaxAge:   10 * time.Minute,
 					CookieSecure:   true,
@@ -64,14 +53,14 @@ func defaultConfig() (Config, error) {
 			},
 			Session: SessionToken{
 				Token: Token{
-					Secret:         s3,
+					Secret:         s2,
 					CookieName:     "session_token",
 					CookieMaxAge:   time.Hour,
 					CookieSecure:   true,
 					CookieHTTPOnly: true,
 					CookieSameSite: http.SameSiteStrictMode,
 				},
-				SecureCookie: securecookie.New(s3, nil),
+				SecureCookie: securecookie.New(s2, nil),
 			},
 		},
 		BaseURLs: BaseURLs{
@@ -97,7 +86,7 @@ func defaultConfig() (Config, error) {
 	return defaultCfg, nil
 }
 
-func Load() (cfg Config, err error) {
+func Load(logger *slog.Logger) (cfg Config, err error) {
 	var cfgPath string
 	flag.StringVar(&cfgPath, "config", "config.yml", "Path to the configuration file (default: config.yml)")
 	flag.Parse()
@@ -121,15 +110,15 @@ func Load() (cfg Config, err error) {
 				err = fmt.Errorf("failed to create default config file: %v\n", err)
 				return
 			}
-			fmt.Printf(">Default config file created at %s\n", cfgPath)
-			fmt.Printf(">You now have to specify the database DSN in the created config file at %s\n", cfgPath)
+			logger.Info("Default config file created", "path", cfgPath)
+			logger.Info("You now have to specify the database DSN in the created config file", "path", cfgPath)
 		} else {
 			err = fmt.Errorf("exiting program, no config file created")
 			return
 		}
 	}
 
-	fmt.Printf("Using config file: %s\n", cfgPath)
+	logger.Info("using config file", "path", cfgPath)
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
 		err = fmt.Errorf("error reading config file: %v", err)

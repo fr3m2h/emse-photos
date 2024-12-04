@@ -22,15 +22,7 @@ type Config struct {
 }
 
 type DevMode struct {
-	Enabled        bool          `yaml:"enabled"`
-	Username       string        `yaml:"username"`
-	Password       string        `yaml:"password"`
-	Secret         secretKey     `yaml:"secret"`
-	CookieName     string        `yaml:"cookie_name"`
-	CookieMaxAge   time.Duration `yaml:"cookie_max_age"`
-	CookieSecure   bool          `yaml:"cookie_secure"`
-	CookieHTTPOnly bool          `yaml:"cookie_http_only"`
-	CookieSameSite http.SameSite `yaml:"cookie_same_site"`
+	Enabled bool `yaml:"enabled"`
 }
 type Server struct {
 	Port                  int           `yaml:"port"`
