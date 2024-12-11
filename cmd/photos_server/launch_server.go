@@ -2,56 +2,38 @@ package main
 
 import (
 	"context"
-	"log/slog"
 
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
-	"photos/internal/config"
-	"photos/internal/handlers"
-	"photos/internal/routes"
+	"photos/pkg/config"
+	"photos/pkg/handlers"
+	"photos/pkg/routes"
 	"syscall"
 	"time"
 
-	slogmulti "github.com/samber/slog-multi"
+	"github.com/rs/zerolog"
 )
 
 func main() {
-	logFile, err := os.Create("logs")
-	if err != nil {
-		slog.Error("error creating file for logs", "error", err)
-	}
-	defer func() {
-		_ = logFile.Close()
-	}()
-	logger := slog.New(
-		slogmulti.Fanout(
-			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}),
-			slog.NewJSONHandler(logFile, &slog.HandlerOptions{}),
-		),
-	)
-
-	cfg, err := config.Load(logger)
-	if err != nil {
-		logger.Error("error initialising handlers config", "error", err)
-		os.Exit(1)
-	}
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.DurationFieldUnit = time.Millisecond
+	cfg := config.Load()
 
 	dbCtx, dbCtxCancel := context.WithTimeout(context.Background(), 8*time.Second)
-	t := time.Now()
-	err = cfg.DB.PingContext(dbCtx)
+	currentTime := time.Now()
+	if cfg.DevMode.Enabled {
+		cfg.Logger.Info().Msg("using dev database")
+	} else {
+		cfg.Logger.Info().Msg("using prod database")
+	}
+	err := cfg.DB.PingContext(dbCtx)
 	if err != nil {
-		logger.Error("error pinging to database", "error", err)
-		os.Exit(1)
+		cfg.Logger.Fatal().Err(err).Msg("failed to ping database")
 	}
 	dbCtxCancel()
-	if cfg.DevMode.Enabled {
-		logger.Info("using dev database")
-	} else {
-		logger.Info("using prod database")
-	}
-	logger.Info("pinged database", "latency", time.Since(t).String())
+	cfg.Logger.Info().Dur("latency", time.Since(currentTime)).Msg("pinged database")
 
 	server := &http.Server{
 		Addr:           fmt.Sprintf("127.0.0.1:%d", cfg.Server.Port),
@@ -75,32 +57,28 @@ func main() {
 		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
-				logger.Error("graceful shutdown timed out", "error", shutdownCtx.Err())
-				os.Exit(1)
+				cfg.Logger.Fatal().Err(err).Msg("graceful shutdown timed out")
 			}
 		}()
 
 		// Trigger graceful shutdown
 		err := server.Shutdown(shutdownCtx)
 		if err != nil {
-			logger.Error("error shutting down server", "error", err)
-			os.Exit(1)
+			cfg.Logger.Fatal().Err(err).Msg("failed to shut down server")
 		}
 		err = cfg.DB.Close()
 		if err != nil {
-			logger.Error("error closing database", "error", err)
-			os.Exit(1)
+			cfg.Logger.Fatal().Err(err).Msg("failed to close database connection")
 
 		}
 		shutdownCtxCancel()
 		serverCtxCancel()
 	}()
 
-	logger.Info("starting server", "address", server.Addr)
+	cfg.Logger.Info().Str("address", server.Addr).Msg("starting server")
 	err = server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		logger.Error("error starting server", "error", err)
-		os.Exit(1)
+		cfg.Logger.Fatal().Err(err).Msg("failed to start server")
 	}
 
 	// Wait for server context to be stopped

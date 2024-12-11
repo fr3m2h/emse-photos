@@ -4,17 +4,25 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"log/slog"
 	"net/http"
 	"os"
-	"photos/internal/db"
+	"photos/pkg/db"
 	"strings"
 	"time"
 
 	"github.com/gorilla/securecookie"
+	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
 )
 
+// defaultConfig generates and returns a default configuration object.
+//
+// The function creates default values for various fields in the Config struct,
+// including default ports, timeouts, and security settings like CSRF and session tokens.
+//
+// Returns:
+//   - Config: The default configuration object.
+//   - error: An error if secure token generation fails.
 func defaultConfig() (Config, error) {
 	s1, err := generateSecureHex(16)
 	if err != nil {
@@ -82,80 +90,97 @@ func defaultConfig() (Config, error) {
 			Logout:      "/logout",
 		},
 	}
-
 	return defaultCfg, nil
 }
 
-func Load(logger *slog.Logger) (cfg Config, err error) {
+// Load loads the application configuration from a YAML file.
+//
+// If the configuration file does not exist, it prompts the user to create a default one.
+// It also sets up logging, parses HTML templates, and initializes the database connection
+// and HTTP client based on the configuration.
+//
+// Returns:
+//   - Config: The application configuration object populated with values from the YAML file
+//     or generated defaults.
+func Load() Config {
+	consoleWriter := zerolog.NewConsoleWriter()
+	logFile, err := os.Create("logs")
+	if err != nil {
+		consoleLogger := zerolog.New(consoleWriter).With().Timestamp().Logger()
+		consoleLogger.Fatal().Err(err).Msg("could not create log file")
+	}
+	logger := zerolog.New(zerolog.MultiLevelWriter(consoleWriter, logFile)).With().Timestamp().Logger()
+
 	var cfgPath string
 	flag.StringVar(&cfgPath, "config", "config.yml", "Path to the configuration file (default: config.yml)")
 	flag.Parse()
 
 	if len(flag.Args()) > 0 {
 		flag.Usage()
-		err = fmt.Errorf("unexpected arguments were provided")
-		return
+		logger.Fatal().Msg("unexpected arguments were given")
 	}
 
 	// Check if the config file exists
 	if _, err = os.Stat(cfgPath); os.IsNotExist(err) {
-		fmt.Printf(">Config file not found at %s\n", cfgPath)
-		fmt.Print(">Would you like to create a default config file? (yes/no): ")
+		logger.Info().Str("path", cfgPath).Msg("config file not found")
+		logger.Info().Msg("would you like to create a default config file? (yes/no): ")
+
 		var response string
 		_, _ = fmt.Scanln(&response)
 		response = strings.ToLower(response)
 
-		if response == "yes" || response == "y" {
+		if strings.HasPrefix(response, "y") {
 			if err = createDefaultConfig(cfgPath); err != nil {
-				err = fmt.Errorf("failed to create default config file: %v\n", err)
-				return
+				logger.Fatal().Err(err).Msg("failed to create default config file")
 			}
-			logger.Info("Default config file created", "path", cfgPath)
-			logger.Info("You now have to specify the database DSN in the created config file", "path", cfgPath)
+			logger.Info().Str("path", cfgPath).Msg("default config file created")
+			logger.Info().Str("path", cfgPath).Msg("you now have to specify the database DSN in the created config file")
 		} else {
-			err = fmt.Errorf("exiting program, no config file created")
-			return
+			logger.Fatal().Msg("exiting program, no config file created")
 		}
 	}
 
-	logger.Info("using config file", "path", cfgPath)
+	logger.Info().Str("path", cfgPath).Msg("using config file")
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
-		err = fmt.Errorf("error reading config file: %v", err)
-		return
+		logger.Fatal().Err(err).Msg("failed to read config file")
 	}
 
+	cfg := Config{}
 	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
-		err = fmt.Errorf("error unmarshalling config file: %v", err)
-		return
+		logger.Fatal().Err(err).Msg("failed to unmarshal config file")
 	}
 	cfg.Templates, err = template.ParseGlob("assets/templates/*.html")
 	if err != nil {
-		err = fmt.Errorf("error parsing templates: %v", err)
-		return
+		logger.Fatal().Err(err).Msg("failed to parse html templates")
 	}
 
 	if cfg.DevMode.Enabled {
 		cfg.DB.DB, err = db.New(cfg.DB.Dev.Username, cfg.DB.Dev.Password, cfg.DB.Dev.Host, cfg.DB.Dev.Port, cfg.DB.Dev.Name, cfg.DB.Dev.Cert, cfg.DB.Dev.MaxOpenConns, cfg.DB.Dev.MaxIdleConns, cfg.DB.Dev.ConnMaxLifetime, false)
 		if err != nil {
-			err = fmt.Errorf("error creating database connection: %v", err)
-			return
+			logger.Fatal().Err(err).Msg("failed to create database connection")
 		}
 	} else {
 		cfg.DB.DB, err = db.New(cfg.DB.Prod.Username, cfg.DB.Prod.Password, cfg.DB.Prod.Host, cfg.DB.Prod.Port, cfg.DB.Prod.Name, cfg.DB.Prod.Cert, cfg.DB.Prod.MaxOpenConns, cfg.DB.Prod.MaxIdleConns, cfg.DB.Prod.ConnMaxLifetime, false)
 		if err != nil {
-			err = fmt.Errorf("error creating database connection: %v", err)
-			return
+			logger.Fatal().Err(err).Msg("failed to create database connection")
 		}
-
 	}
 	cfg.HttpClient = newHTTPClient(6*time.Second, false, false, false, nil)
 	cfg.Security.Session.SecureCookie = securecookie.New(cfg.Security.Session.Secret, nil)
+	cfg.Logger = logger
 
-	return cfg, nil
+	return cfg
 }
 
+// createDefaultConfig generates a default configuration file at the specified path.
+//
+// Parameters:
+//   - path: The file path where the default configuration file should be created.
+//
+// Returns:
+//   - error: An error if the configuration could not be created or written to the file.
 func createDefaultConfig(path string) error {
 	cfg, err := defaultConfig()
 	if err != nil {

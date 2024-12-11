@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"photos/internal/db/query"
+	"photos/pkg/db/query"
 	"time"
 )
 

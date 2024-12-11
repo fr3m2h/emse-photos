@@ -2,8 +2,8 @@ package routes
 
 import (
 	"net/http"
-	"photos/internal/handlers"
-	"photos/internal/middlewares"
+	"photos/pkg/handlers"
+	"photos/pkg/middlewares"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 	"github.com/gorilla/csrf"
+	"github.com/rs/zerolog/hlog"
 )
 
 func Service(cfg handlers.Config) http.Handler {
@@ -20,27 +21,39 @@ func Service(cfg handlers.Config) http.Handler {
 	r.NotFound(cfg.ServeNotFoundHandler)
 	r.Get(cfg.Routes.Favicon, handlers.ServeFaviconHandler)
 	r.Get(cfg.Routes.Landing, cfg.ServeLandingHandler)
-	r.Get(cfg.Routes.Login, cfg.LoginHandler)
-	r.Get(cfg.Routes.CasCallback, cfg.CasCallbackHandler)
 
+	r.Group(func(r chi.Router) {
+		r.Use(httprate.Limit(
+			10,
+			time.Minute,
+			httprate.WithKeyFuncs(httprate.KeyByIP, httprate.KeyByEndpoint),
+			httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "Too many requests", http.StatusTooManyRequests)
+			}),
+		))
+		r.Get(cfg.Routes.Login, cfg.LoginHandler)
+		r.Get(cfg.Routes.CasCallback, cfg.CasCallbackHandler)
+	})
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.AuthRestricted(cfg))
 		r.Get(cfg.Routes.Dashboard, cfg.ServeDashboardHandler)
 		r.Get(cfg.Routes.Logout, cfg.LogoutHandler)
-
-		// r.Post("/login_first_stage", cfg.HandlerLoginUserFirstStage)
-
-		// r.Group(func(r chi.Router) {
-		// 	r.Use(AuthRestricted(cfg))
-		// 	r.Get("/logout", cfg.HandlerLogoutUser)
-		// 	r.Post("/change_password", cfg.HandlerUpdateUserPasswordWithOldPassword)
-		//
-		// })
 	})
 	return r
 }
 
 func loadGlobalMiddlewares(r *chi.Mux, cfg handlers.Config) {
+	r.Use(hlog.RemoteAddrHandler("ip"), hlog.UserAgentHandler("ua"), hlog.RefererHandler("referer"), hlog.RequestIDHandler("req-id", "X-Request-Id"))
+	r.Use(hlog.NewHandler(cfg.Logger))
+	r.Use(hlog.AccessHandler(func(r *http.Request, status, size int, duration time.Duration) {
+		hlog.FromRequest(r).Info().
+			Str("method", r.Method).
+			Stringer("url", r.URL).
+			Int("status", status).
+			Int("size", size).
+			Dur("duration", duration).
+			Msg("")
+	}))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -50,11 +63,8 @@ func loadGlobalMiddlewares(r *chi.Mux, cfg handlers.Config) {
 	}))
 	r.Use(middleware.AllowContentEncoding("gzip", "deflate", "gzip/deflate", "deflate/gzip"))
 	r.Use(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded"))
+	r.Use(middleware.CleanPath, middleware.RedirectSlashes)
 	r.Use(middleware.Compress(4, "application/json", "application/x-www-form-urlencoded"))
-	r.Use(middleware.CleanPath)
-	r.Use(middleware.RedirectSlashes)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(cfg.Server.RequestContextTimeout))
 	r.Use(middlewares.MaxBodySize(cfg.Server.MaxBodySize))
 	r.Use(csrf.Protect(
@@ -67,7 +77,6 @@ func loadGlobalMiddlewares(r *chi.Mux, cfg handlers.Config) {
 		csrf.FieldName(cfg.Security.Csrf.FieldName),
 		csrf.CookieName(cfg.Security.Csrf.CookieName),
 	))
-	// Rate limiter for all routes
 	r.Use(httprate.Limit(
 		60,
 		time.Minute,

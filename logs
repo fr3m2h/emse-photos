@@ -1,4 +1,14 @@
-{"time":"2024-12-04T17:17:14.704478746+01:00","level":"INFO","msg":"using config file","path":"config.yml"}
-{"time":"2024-12-04T17:17:14.708840037+01:00","level":"INFO","msg":"using dev database"}
-{"time":"2024-12-04T17:17:14.708908626+01:00","level":"INFO","msg":"pinged database","latency":"3.402225ms"}
-{"time":"2024-12-04T17:17:14.710125536+01:00","level":"INFO","msg":"starting server","address":"127.0.0.1:8888"}
+{"level":"info","path":"config.yml","time":1733947880,"message":"using config file"}
+{"level":"info","time":1733947880,"message":"using dev database"}
+{"level":"info","latency":4.230259,"time":1733947880,"message":"pinged database"}
+{"level":"info","address":"127.0.0.1:8888","time":1733947880,"message":"starting server"}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.030943,"time":1733947887}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.014144,"time":1733947887}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.004407,"time":1733947887}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.005399,"time":1733947887}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.069239,"time":1733947887}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.004617,"time":1733947887}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.004608,"time":1733947887}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.004197,"time":1733947887}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.023741,"time":1733947887}
+{"level":"info","method":"GET","url":"/","status":0,"size":0,"duration":0.018652,"time":1733947887}
