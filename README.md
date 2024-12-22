@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  Photos
+  EMSE-Photos
   <br>
 </h1>
 
