@@ -46,25 +46,7 @@
 
 ## Getting started
 
-You can find a quick guide inside ./docs/tutorials/tutorials.md to help you setup the environnement
-
-```bash
-# Clone this repository
-$ git clone https://github.com/fr3m2h/photos
-
-# Go into the repository
-$ cd photos
-
-# Install dependencies
-$ go mod tidy
-
-# [Run|Build] the photos or the mock cas server
-$ go [run|build] -o bin/launch_photo_server ./cmd/photos_server/launch_server.go
-$ go [run|build] -o bin/launch_mock_cas_server ./cmd/cas_server/launch_server.go
-
-# Test the app
-go test -cover ./...
-```
+You can find a guide inside ./docs/tutorials/tutorials.md to help you setup the environnement
 
 ## License
 
