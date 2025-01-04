@@ -46,7 +46,7 @@
 
 ## Getting started
 
-You can find a guide inside ./docs/tutorials/tutorials.md to help you setup the environnement
+You can find a guide inside [tutorials](./docs/tutorials/tutorials.md) to help you setup the environnement
 
 ## License
 
