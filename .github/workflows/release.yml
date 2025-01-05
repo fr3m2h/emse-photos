@@ -22,7 +22,7 @@ jobs:
           GOOS=darwin GOARCH=amd64 go build -o artifacts/photos-server-darwin-amd64 ./cmd/photos_server/launch_server.go
       - name: Generate changelog
         run: |
-          git log --pretty=format:"%h - %an: %s" "$(git tag | tail -n 2 | head -n 1)..$(git tag | tail -n 1)" > CHANGELOG
+          git log --pretty=format:"%h - %an: %s" "$(git tag | tail -n 1)..$(git tag | tail -n 2 | head -n 1)" > CHANGELOG
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
