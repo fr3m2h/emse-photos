@@ -20,8 +20,8 @@ jobs:
       - name: Build artifacts
         run: |
           mkdir -p artifacts
-          GOOS=linux GOARCH=amd64 go build -o artifacts/photos-linux-amd64
-          GOOS=darwin GOARCH=amd64 go build -o artifacts/photos-darwin-amd64
+          GOOS=linux GOARCH=amd64 go build ./cmd/photos_server/launch_server.go -o artifacts/photos-server-linux-amd64
+          GOOS=darwin GOARCH=amd64 go build ./cmd/photos_server/launch_server.go -o artifacts/photos-server-darwin-amd64
       - name: Generate changelog
         run: |
           git log $(git tag | tail -n 2 | head -n 1)..$(git tag | tail -n 1) --pretty=format:"%h - %an: %s" > CHANGELOG
