@@ -11,6 +11,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23.4'
@@ -24,7 +27,6 @@ jobs:
       - name: Generate changelog
         run: |
           git log --pretty=format:"%h - %an: %s" "$(git tag --sort=committerdate | tail -n 2 | head -n 1).." > ${{ github.workspace }}-CHANGELOG
-          git log > ${{ github.workspace }}-CHANGELOG
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
