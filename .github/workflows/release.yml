@@ -22,7 +22,7 @@ jobs:
           GOOS=darwin GOARCH=amd64 go build -o artifacts/photos-server-darwin-amd64 ./cmd/photos_server/launch_server.go
       - name: Generate changelog
         run: |
-          git log --pretty=format:"%h - %an: %s" "$(git tag --sort=committerdate | tail -n 2 | head -n 1)..$(git tag --sort=committerdate | tail -n 1)" > CHANGELOG
+          git log --pretty=format:"%h - %an: %s" "$(git tag --sort=committerdate | tail -n 2 | head -n 1)..$(git tag --sort=committerdate | tail -n 1)" > ${{ github.workspace }}-CHANGELOG
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -30,7 +30,7 @@ jobs:
           files: |
             artifacts/photos-server-linux-amd64
             artifacts/photos-server-darwin-amd64
-          body_path: CHANGELOG
+          body_path: ${{ github.workspace }}-CHANGELOG
         env:
           GITHUB_TOKEN: ${{ secrets.FINE_GRAINED_PAT }}
 
