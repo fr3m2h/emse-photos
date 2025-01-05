@@ -30,11 +30,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/photos-linux-amd64
-            artifacts/photos-darwin-amd64
-            artifacts/photos-windows-amd64.exe
+            artifacts/photos-server-linux-amd64
+            artifacts/photos-server-darwin-amd64
           body_path: CHANGELOG
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.FINE_GRAINED_PAT }}
 
 
