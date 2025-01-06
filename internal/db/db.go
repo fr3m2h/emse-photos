@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"photos/pkg/db/query"
+	"photos/internal/db/query"
 	"sync"
 	"time"
 

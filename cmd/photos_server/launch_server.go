@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"photos/pkg/config"
-	"photos/pkg/handlers"
-	"photos/pkg/routes"
+	"photos/internal/config"
+	"photos/internal/handlers"
+	"photos/internal/routes"
 	"syscall"
 	"time"
 

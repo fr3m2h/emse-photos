@@ -2,8 +2,8 @@ package routes
 
 import (
 	"net/http"
-	"photos/pkg/handlers"
-	"photos/pkg/middlewares"
+	"photos/internal/handlers"
+	"photos/internal/middlewares"
 	"time"
 
 	"github.com/go-chi/chi/v5"

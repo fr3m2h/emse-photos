@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"photos/pkg/handlers"
+	"photos/internal/handlers"
 	"time"
 )
 

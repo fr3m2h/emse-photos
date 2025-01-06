@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"photos/pkg/config"
+	"photos/internal/config"
 )
 
 type Config config.Config

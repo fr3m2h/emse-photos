@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
-	"photos/pkg/db"
+	"photos/internal/db"
 	"strings"
 	"time"
 

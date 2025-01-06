@@ -3,7 +3,7 @@ package config
 import (
 	"html/template"
 	"net/http"
-	"photos/pkg/db"
+	"photos/internal/db"
 	"time"
 
 	"github.com/gorilla/securecookie"
