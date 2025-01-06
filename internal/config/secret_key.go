@@ -8,49 +8,39 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// secretKey represents a secure byte slice used for encryption or token generation.
-// It provides methods to marshal and unmarshal the key into/from YAML.
+// secretKey is a secure byte slice that is typically used for encryption or token generation.
+// It can be serialized into a hexadecimal string for easy storage in YAML files
+// and deserialized back into its original form.
 type secretKey []byte
 
-// MarshalYAML converts the secretKey to a hexadecimal string for YAML serialization.
-//
-// Returns:
-//   - interface{}: A hexadecimal string representation of the secretKey.
-//   - error: An error if marshaling fails (unlikely in this implementation).
+// MarshalYAML converts the SecretKey into a hexadecimal string format.
+// This allows the key to be stored in YAML files in a human-readable way.
+// The function ensures the key is safely serialized for external storage.
 func (k secretKey) MarshalYAML() (interface{}, error) {
 	return hex.EncodeToString(k), nil
 }
 
-// UnmarshalYAML converts a hexadecimal string from YAML into a secretKey.
-//
-// Parameters:
-//   - node: A YAML node containing the hexadecimal string.
-//
-// Returns:
-//   - error: An error if the hexadecimal string is invalid or decoding fails.
+// UnmarshalYAML reads a hexadecimal string from a YAML node and decodes it back into a SecretKey.
+// This process ensures that the key stored in the YAML file is correctly parsed
+// and restored to its original byte slice format.
 func (k *secretKey) UnmarshalYAML(node *yaml.Node) error {
 	value := node.Value
-	ba, err := hex.DecodeString(value)
+	decodedBytes, err := hex.DecodeString(value)
 	if err != nil {
 		return err
 	}
-	*k = ba
+	*k = decodedBytes
 	return nil
 }
 
-// generateSecureHex generates a cryptographically secure random hexadecimal string of the specified length.
-//
-// Parameters:
-//   - length: The length of the byte array to generate.
-//
-// Returns:
-//   - secretKey: A hexadecimal-encoded secure key.
-//   - error: An error if random byte generation fails.
+// generateSecureHex creates a secure random key and encodes it as a hexadecimal string.
+// The function generates a random byte array of the specified length, ensuring
+// the key is cryptographically secure and suitable for sensitive operations.
 func generateSecureHex(length int) (secretKey, error) {
 	bytes := make([]byte, length)
 	_, err := rand.Read(bytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate random bytes: %w", err)
+		return nil, fmt.Errorf("Failed to generate random bytes: %w", err)
 	}
 	return []byte(hex.EncodeToString(bytes)), nil
 }

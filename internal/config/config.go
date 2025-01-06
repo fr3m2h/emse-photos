@@ -15,14 +15,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// defaultConfig generates and returns a default configuration object.
-//
-// The function creates default values for various fields in the Config struct,
-// including default ports, timeouts, and security settings like CSRF and session tokens.
-//
-// Returns:
-//   - Config: The default configuration object.
-//   - error: An error if secure token generation fails.
+// The defaultConfig function generates a default configuration object for the application.
+// It initializes fields for development mode, server settings, security tokens, base URLs, and routes.
+// If there is an error while generating secure tokens, the function returns the error.
 func defaultConfig() (Config, error) {
 	s1, err := generateSecureHex(16)
 	if err != nil {
@@ -93,21 +88,15 @@ func defaultConfig() (Config, error) {
 	return defaultCfg, nil
 }
 
-// Load loads the application configuration from a YAML file.
-//
-// If the configuration file does not exist, it prompts the user to create a default one.
-// It also sets up logging, parses HTML templates, and initializes the database connection
-// and HTTP client based on the configuration.
-//
-// Returns:
-//   - Config: The application configuration object populated with values from the YAML file
-//     or generated defaults.
+// The Load function reads the application configuration from a YAML file or generates a default configuration.
+// It sets up logging, initializes database connections, parses HTML templates, and creates an HTTP client.
+// If the configuration file does not exist, the function prompts the user to create a default one.
 func Load() Config {
 	consoleWriter := zerolog.NewConsoleWriter()
 	logFile, err := os.Create("logs")
 	if err != nil {
 		consoleLogger := zerolog.New(consoleWriter).With().Timestamp().Logger()
-		consoleLogger.Fatal().Err(err).Msg("could not create log file")
+		consoleLogger.Fatal().Err(err).Msg("Could not create log file.")
 	}
 	logger := zerolog.New(zerolog.MultiLevelWriter(consoleWriter, logFile)).With().Timestamp().Logger()
 
@@ -117,13 +106,12 @@ func Load() Config {
 
 	if len(flag.Args()) > 0 {
 		flag.Usage()
-		logger.Fatal().Msg("unexpected arguments were given")
+		logger.Fatal().Msg("Unexpected arguments were provided.")
 	}
 
-	// Check if the config file exists
 	if _, err = os.Stat(cfgPath); os.IsNotExist(err) {
-		logger.Info().Str("path", cfgPath).Msg("config file not found")
-		logger.Info().Msg("would you like to create a default config file? (yes/no): ")
+		logger.Info().Str("path", cfgPath).Msg("Config file not found.")
+		logger.Info().Msg("Would you like to create a default config file? (yes/no): ")
 
 		var response string
 		_, _ = fmt.Scanln(&response)
@@ -131,40 +119,40 @@ func Load() Config {
 
 		if strings.HasPrefix(response, "y") {
 			if err = createDefaultConfig(cfgPath); err != nil {
-				logger.Fatal().Err(err).Msg("failed to create default config file")
+				logger.Fatal().Err(err).Msg("Failed to create default config file.")
 			}
-			logger.Info().Str("path", cfgPath).Msg("default config file created")
-			logger.Info().Str("path", cfgPath).Msg("you now have to specify the database DSN in the created config file")
+			logger.Info().Str("path", cfgPath).Msg("Default config file created.")
+			logger.Info().Str("path", cfgPath).Msg("You need to specify the database DSN in the created config file.")
 		} else {
-			logger.Fatal().Msg("exiting program, no config file created")
+			logger.Fatal().Msg("Exiting program as no config file was created.")
 		}
 	}
 
-	logger.Info().Str("path", cfgPath).Msg("using config file")
+	logger.Info().Str("path", cfgPath).Msg("Using config file.")
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to read config file")
+		logger.Fatal().Err(err).Msg("Failed to read the config file.")
 	}
 
 	cfg := Config{}
 	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to unmarshal config file")
+		logger.Fatal().Err(err).Msg("Failed to parse the config file.")
 	}
 	cfg.Templates, err = template.ParseGlob("assets/templates/*.html")
 	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to parse html templates")
+		logger.Fatal().Err(err).Msg("Failed to parse HTML templates.")
 	}
 
 	if cfg.DevMode.Enabled {
 		cfg.DB.DB, err = db.New(cfg.DB.Dev.Username, cfg.DB.Dev.Password, cfg.DB.Dev.Host, cfg.DB.Dev.Port, cfg.DB.Dev.Name, cfg.DB.Dev.Cert, cfg.DB.Dev.MaxOpenConns, cfg.DB.Dev.MaxIdleConns, cfg.DB.Dev.ConnMaxLifetime, false)
 		if err != nil {
-			logger.Fatal().Err(err).Msg("failed to create database connection")
+			logger.Fatal().Err(err).Msg("Failed to establish a database connection.")
 		}
 	} else {
 		cfg.DB.DB, err = db.New(cfg.DB.Prod.Username, cfg.DB.Prod.Password, cfg.DB.Prod.Host, cfg.DB.Prod.Port, cfg.DB.Prod.Name, cfg.DB.Prod.Cert, cfg.DB.Prod.MaxOpenConns, cfg.DB.Prod.MaxIdleConns, cfg.DB.Prod.ConnMaxLifetime, false)
 		if err != nil {
-			logger.Fatal().Err(err).Msg("failed to create database connection")
+			logger.Fatal().Err(err).Msg("Failed to establish a database connection.")
 		}
 	}
 	cfg.HttpClient = newHTTPClient(6*time.Second, false, false, false, nil)
@@ -174,28 +162,22 @@ func Load() Config {
 	return cfg
 }
 
-// createDefaultConfig generates a default configuration file at the specified path.
-//
-// Parameters:
-//   - path: The file path where the default configuration file should be created.
-//
-// Returns:
-//   - error: An error if the configuration could not be created or written to the file.
+// The createDefaultConfig function creates a default configuration file at the given path.
+// It serializes the default configuration settings into YAML format and writes them to the specified file.
+// If the file cannot be created or written to, the function returns an error.
 func createDefaultConfig(path string) error {
 	cfg, err := defaultConfig()
 	if err != nil {
 		return err
 	}
 
-	// Marshal the default config into YAML
 	data, err := yaml.Marshal(&cfg)
 	if err != nil {
-		return fmt.Errorf("failed to marshal default config: %w", err)
+		return fmt.Errorf("Failed to marshal default configuration: %w", err)
 	}
 
-	// Write the YAML data to the specified file
 	if err := os.WriteFile(path, data, 0600); err != nil {
-		return fmt.Errorf("failed to write default config to file: %w", err)
+		return fmt.Errorf("Failed to write default configuration to file: %w", err)
 	}
 	return nil
 }

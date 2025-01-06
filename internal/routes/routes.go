@@ -14,6 +14,9 @@ import (
 	"github.com/rs/zerolog/hlog"
 )
 
+// Service creates and configures the HTTP service for the application.
+// It sets up routes, applies global middlewares, and defines groups for public and authenticated routes.
+// This handler integrates rate limiting, authentication, and CSRF protection for secure operations.
 func Service(cfg handlers.Config) http.Handler {
 	r := chi.NewRouter()
 	loadGlobalMiddlewares(r, cfg)
@@ -42,6 +45,9 @@ func Service(cfg handlers.Config) http.Handler {
 	return r
 }
 
+// loadGlobalMiddlewares applies global middlewares to the router.
+// These middlewares handle logging, request rate limiting, cross-origin resource sharing (CORS),
+// request compression, content type validation, body size limits, CSRF protection...
 func loadGlobalMiddlewares(r *chi.Mux, cfg handlers.Config) {
 	r.Use(hlog.RemoteAddrHandler("ip"), hlog.UserAgentHandler("ua"), hlog.RefererHandler("referer"), hlog.RequestIDHandler("req-id", "X-Request-Id"))
 	r.Use(hlog.NewHandler(cfg.Logger))

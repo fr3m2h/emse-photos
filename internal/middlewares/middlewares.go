@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// MaxBodySize creates a middleware that limits the size of the request body.
+// Requests exceeding the specified size will result in the connection being closed.
+// This middleware is useful for preventing excessive memory consumption or abuse.
 func MaxBodySize(size int64) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -18,6 +21,10 @@ func MaxBodySize(size int64) func(http.Handler) http.Handler {
 	}
 }
 
+// AuthRestricted creates a middleware that restricts access to authenticated users only.
+// It verifies the presence and validity of a session cookie. If the session token is missing, invalid,
+// or expired, the middleware redirects the user to the landing page. Valid session tokens are added
+// to the request context for subsequent use.
 func AuthRestricted(cfg handlers.Config) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +60,10 @@ func AuthRestricted(cfg handlers.Config) func(http.Handler) http.Handler {
 	}
 }
 
-// Assumes that is used after AuthRestricted
+// AdminRestricted creates a middleware that restricts access to administrators only.
+// It checks the user's session token and retrieves their information from the database.
+// If the user is not an administrator or the session token is invalid, the request is rejected.
+// AuthRestricted must be applied before this middleware to ensure the session is authenticated.
 func AdminRestricted(cfg handlers.Config) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +82,9 @@ func AdminRestricted(cfg handlers.Config) func(http.Handler) http.Handler {
 	}
 }
 
+// redirectToLanding clears the session cookie and redirects the user to the landing page.
+// This function is used when authentication fails, ensuring the session is invalidated
+// and the user is directed to the default entry point.
 func redirectToLanding(w http.ResponseWriter, r *http.Request, cfg handlers.Config) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   cfg.Security.Session.CookieName,
