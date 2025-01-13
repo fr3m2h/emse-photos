@@ -1,0 +1,9 @@
+{{range .Photos}}
+<div class="photo-item">
+	<img src="{{.PathToPhoto}}" alt="Photo {{.PhotoID}}" onclick="zoomImage(this)" />
+</div>
+{{end}}
+
+<!-- Trigger the next batch of photos -->
+<div class="photos-grid" hx-get="/event/photos?event_id={{.EventID}}&offset={{.NextOffset}}&limit={{.Limit}}"
+	hx-trigger="revealed" hx-swap="afterend" hx-indicator=".loading"></div>

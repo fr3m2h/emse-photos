@@ -6,176 +6,398 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Photos EMSE</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            display: flex;
-            height: 100vh;
-            background-color: #1c1c1c;
-            color: #fff;
-            overflow: hidden;
-        }
-
-        .navbar {
-            width: 250px;
-            background-color: #000;
-            color: #fff;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: start;
-        }
-
-        .logo {
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-        }
-
-        .logo img {
-            max-width: 150px;
-            height: auto;
-        }
-
-        .logo-text {
-            font-size: 24px;
-            font-weight: bold;
-            color: #FF9900;
-            margin-left: 10px;
-        }
-
-        .nav-item {
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-
-        .nav-item:hover {
-            color: #FF9900;
-        }
-
-        .content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background-color: #1c1c1c;
-        }
-
-        .events-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
-        }
-
-        .event-box {
-            background-color: #333;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
-            color: #fff;
-        }
-
-        .event-box:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 20px rgba(255, 153, 0, 0.5);
-        }
-
-        .photo-item {
-            margin-bottom: 10px;
-        }
-
-        .photo {
-            width: 100%;
-            border-radius: 5px;
-        }
-
-        .loading {
-            text-align: center;
-            color: #FF9900;
-            font-style: italic;
-        }
-
-        /* Responsive Styles */
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-            }
-
-            .navbar {
-                width: 100%;
-                padding: 10px;
-                align-items: center;
-            }
-
-            .logo img {
-                max-width: 120px;
-            }
-
-            .navbar h1 {
-                font-size: 20px;
-                margin-bottom: 10px;
-            }
-
-            .nav-item {
-                font-size: 14px;
-                margin-bottom: 10px;
-            }
-
-            .content {
-                padding: 10px;
-            }
-
-            .events-grid {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            }
-
-            .event-box {
-                padding: 15px;
-            }
-        }
-    </style>
-    <script src="https://unpkg.com/htmx.org@1.9.0"></script>
 </head>
 
 <body>
-    <!-- Sidebar Navigation -->
     <div class="navbar">
-        <!-- Logo Section -->
         <div class="logo">
             <div class="logo-text">Photos</div>
         </div>
-        <div class="nav-item">Accueil</div>
-        <div class="nav-item">Événements</div>
-        <div class="nav-item">Paramètres</div>
+
+        <!-- User Info -->
+        <div class="user-info">
+            <p>Bienvenue, {{.UserInfo.FullName}}</p>
+        </div>
+
+        <!-- Logout Button -->
         <a href="/logout">
             <div class="nav-item">Déconnexion</div>
         </a>
     </div>
 
-    <!-- Main Content Area -->
     <div class="content">
-        <!-- Events Grid (Initial View) -->
+        {{if .UserInfo.IsAdmin}}
+        <div class="event-box add-event">
+            <button class="plus-btn" onclick="openFormModal()">+</button>
+            <p>Créer un événement</p>
+        </div>
+        {{end}}
         <div class="events-grid">
-            <div class="event-box" hx-get="/photos?event_id=1" hx-target=".content" hx-trigger="click">
-                <h3>Événement 1</h3>
+            {{range .Events}}
+            {{if not .ParentEventID.Valid}}
+
+            <div class="event-box">
+                <a href="/event?event_id={{.EventID}}">
+                    <h3>{{.Name}}</h3>
+                </a>
+                <button class="info-btn" onclick="openPopup('{{.Name}}', '{{.Description}}', '{{.EventDate.Format " 02 Jan 2006, 15:04"}}')">ℹ️</button>
             </div>
-            <div class="event-box" hx-get="/photos?event_id=2" hx-target=".content" hx-trigger="click">
-                <h3>Événement 2</h3>
-            </div>
-            <div class="event-box" hx-get="/photos?event_id=3" hx-target=".content" hx-trigger="click">
-                <h3>Événement 3</h3>
-            </div>
-            <!-- Add more event boxes as needed -->
+
+            {{end}}
+            {{end}}
         </div>
     </div>
+
+    <!-- Popup Modal -->
+    <div class="popup-overlay" id="popup">
+        <div class="popup">
+            <h3 id="popup-title"></h3>
+            <p id="popup-description"></p>
+            <p id="popup-date"></p>
+            <button class="popup-close" onclick="closePopup()">Close</button>
+        </div>
+    </div>
+    <!-- Form Modal -->
+    <div class="form-modal-overlay" id="form-modal">
+        <div class="form-modal">
+            <h3>Créer un événement</h3>
+            <form action="/create-event" method="post">
+                <label for="event-name">Nom de l'événement</label>
+                <input type="text" id="event-name" name="event_name" required>
+
+                <label for="event-description">Description</label>
+                <textarea id="event-description" name="event_description" required></textarea>
+                <input type="hidden" name="csrf_token" value="{{.CSRF_TOKEN}}">
+                <label for="event-date">Date et Heure</label>
+                <input type="datetime-local" id="event-date" name="event_date" required value="{{.DefaultDate}}">
+
+                <button type="submit" class="submit-btn">Créer</button>
+                <button type="button" class="cancel-btn" onclick="closeFormModal()">Annuler</button>
+
+            </form>
+        </div>
+    </div>
+
 </body>
 
 </html>
+
+<script>
+    function openPopup(name, description, date) {
+        document.getElementById('popup-title').innerText = name;
+        document.getElementById('popup-description').innerText = description;
+        document.getElementById('popup-date').innerText = "Date de l'évènement: " + date;
+        document.getElementById('popup').style.display = "flex";
+    }
+
+    function closePopup() {
+        document.getElementById('popup').style.display = "none";
+    }
+
+    function openFormModal() {
+        document.getElementById('form-modal').style.display = "flex";
+    }
+
+    function closeFormModal() {
+        document.getElementById('form-modal').style.display = "none";
+    }
+</script>
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        display: flex;
+        height: 100vh;
+        background-color: #f5f5f5;
+        color: #333;
+        overflow: hidden;
+    }
+
+    .navbar {
+        width: 250px;
+        background-color: #ffffff;
+        color: #2c3e50;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        border-right: 1px solid #e0e0e0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo {
+        margin-bottom: 30px;
+        display: flex;
+        align-items: center;
+    }
+
+    .logo-text {
+        font-size: 24px;
+        font-weight: bold;
+        color: #3498db;
+    }
+
+    .user-info {
+        margin-bottom: 20px;
+        font-size: 16px;
+        color: #555;
+    }
+
+    .nav-item {
+        margin-bottom: 15px;
+        transition: color 0.3s;
+    }
+
+    .nav-item a {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .nav-item:hover {
+        color: #2980b9;
+    }
+
+    .add-event {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .content {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .events-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        /* Maximum of 5 columns */
+        gap: 20px;
+        /* Space between the grid items */
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 1024px) {
+        .events-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .events-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .events-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    .event-box {
+        background-color: #3498db;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        color: #fff;
+        position: relative;
+    }
+
+    .event-box a {
+        text-decoration: none !important;
+        color: inherit;
+        display: block;
+    }
+
+
+    .event-box:hover {
+        background-color: #2980b9;
+        color: #f1f1f1;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        transform: translateY(-5px);
+    }
+
+    .event-box h3 {
+        margin-bottom: 10px;
+        text-decoration: none !important;
+    }
+
+    .info-btn {
+        background-color: #ffffff;
+        color: #3498db;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s;
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+    }
+
+    .info-btn:hover {
+        background-color: #f0f0f0;
+    }
+
+    /* Popup (Modal) */
+    .popup-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .popup {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .popup h3 {
+        margin-bottom: 15px;
+    }
+
+    .popup p {
+        margin-bottom: 15px;
+        color: #555;
+    }
+
+    .popup-close {
+        background-color: #3498db;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s;
+    }
+
+    .popup-close:hover {
+        background-color: #2980b9;
+    }
+
+    .add-event {
+        background-color: #f9f9f9;
+        border: 2px dashed #3498db;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 20px;
+    }
+
+    .plus-btn {
+        background-color: #3498db;
+        color: #fff;
+        font-size: 24px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s;
+    }
+
+    .plus-btn:hover {
+        background-color: #2980b9;
+        transform: scale(1.1);
+    }
+
+    /* Form Modal Styles */
+    .form-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .form-modal {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-modal h3 {
+        margin-bottom: 15px;
+    }
+
+    .form-modal label {
+        display: block;
+        text-align: left;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .form-modal input,
+    .form-modal textarea {
+        width: 100%;
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+
+    .submit-btn {
+        background-color: #3498db;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+    }
+
+    .submit-btn:hover {
+        background-color: #2980b9;
+    }
+
+    .cancel-btn {
+        background-color: #ddd;
+        color: #333;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+    }
+
+    .cancel-btn:hover {
+        background-color: #bbb;
+    }
+</style>

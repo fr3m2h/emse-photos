@@ -58,14 +58,14 @@ type Event struct {
 	Name          string
 	Description   string
 	EventDate     time.Time
-	CreationDate  sql.NullTime
+	CreationDate  time.Time
 	ParentEventID sql.NullInt32
 }
 
 type Photo struct {
 	PhotoID      uint32
 	PathToPhoto  string
-	CreationDate sql.NullTime
+	CreationDate time.Time
 	EventID      uint32
 }
 
@@ -100,7 +100,7 @@ type UserFolder struct {
 	IsSubFolder    sql.NullBool
 	Name           string
 	Description    string
-	CreationDate   sql.NullTime
+	CreationDate   time.Time
 	UserID         uint32
 	ParentFolderID sql.NullInt32
 }

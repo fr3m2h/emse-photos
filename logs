@@ -1,0 +1,4 @@
+{"level":"info","path":"config.yml","time":1736731647,"message":"Using config file."}
+{"level":"info","time":1736731647,"message":"using dev database"}
+{"level":"info","latency":1.421649,"time":1736731647,"message":"pinged database"}
+{"level":"info","address":"127.0.0.1:8888","time":1736731647,"message":"starting server"}

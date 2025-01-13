@@ -1,50 +1,134 @@
 package handlers
 
 import (
+	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
-	"net/url"
+	"photos/internal/db/query"
+	"strconv"
 	"time"
+
+	"github.com/gorilla/csrf"
 )
 
-// Used after AdminRestricted
-func (cfg Config) CreateEventHandler(w http.ResponseWriter, r *http.Request) {
-	params := url.Values{}
-	casLoginUrlWithCallback := ""
-	if cfg.DevMode.Enabled {
-		params.Add("service", fmt.Sprintf("%s%s", cfg.BaseURLs.Dev.Service, cfg.Routes.CasCallback))
-		casLoginUrlWithCallback = fmt.Sprintf("%s/login?%s", cfg.BaseURLs.Dev.Cas, params.Encode())
-	} else {
-		params.Add("service", fmt.Sprintf("%s%s", cfg.BaseURLs.Prod.Service, cfg.Routes.CasCallback))
-		casLoginUrlWithCallback = fmt.Sprintf("%s/login?%s", cfg.BaseURLs.Prod.Cas, params.Encode())
+func (cfg Config) ServeEventHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	eventID, err := strconv.Atoi(r.FormValue("event_id"))
+	if err != nil {
+		RespondWithMessage(w, fmt.Sprintf("Could not parse event_id param: %s", err), http.StatusInternalServerError)
+		return
 	}
 
-	cookie, err := r.Cookie(cfg.Security.Session.CookieName)
+	events, err := cfg.DB.DB.GetEvents(ctx)
 	if err != nil {
-		http.Redirect(w, r, casLoginUrlWithCallback, http.StatusFound)
+		RespondWithMessage(w, fmt.Sprintf("DB Failure: %s", err), http.StatusInternalServerError)
 		return
 	}
-	var data map[string]string
-	err = cfg.Security.Session.SecureCookie.Decode(cfg.Security.Session.CookieName, cookie.Value, &data)
+
+	csrfToken := csrf.Token(r)
+	userInfo := ctx.Value("userInfo").(query.User)
+	// Filter the main event and its child events
+	var mainEvent query.Event
+	childEvents := make([]query.Event, 0)
+	eventExists := false
+
+	for _, e := range events {
+		if e.EventID == uint32(eventID) {
+			mainEvent = e
+			eventExists = true
+		}
+		if e.ParentEventID.Valid && e.ParentEventID.Int32 == int32(eventID) {
+			childEvents = append(childEvents, e)
+		}
+	}
+
+	// If the main event doesn't exist, respond with an error
+	if !eventExists {
+		RespondWithMessage(w, "event_id does not correspond to any existing event", http.StatusBadRequest)
+		return
+	}
+
+	photos, err := cfg.DB.DB.GetPhotosByEventID(ctx, mainEvent.EventID)
 	if err != nil {
-		http.Redirect(w, r, casLoginUrlWithCallback, http.StatusFound)
+		RespondWithMessage(w, fmt.Sprintf("DB Failure: %s", err), http.StatusInternalServerError)
 		return
 	}
-	sessionToken, ok := data[cfg.Security.Session.CookieName]
-	if !ok || sessionToken == "" {
-		http.Redirect(w, r, casLoginUrlWithCallback, http.StatusFound)
-		return
+
+	now := time.Now()
+	defaultDate := now.Format("2006-01-02T15:04") // Proper datetime-local format
+	// Prepare the data for the template
+	data := map[string]interface{}{
+		"Event":       mainEvent,
+		"ChildEvents": childEvents,
+		"Photos":      photos,
+		"UserInfo":    userInfo,
+		"CSRF_TOKEN":  csrfToken,
+		"DefaultDate": defaultDate,
+		"ParentID":    eventID,
 	}
-	session, err := cfg.DB.GetSessionWithToken(r.Context(), sessionToken)
+
+	w.Header().Set("Content-Type", "text/html")
+	err = cfg.Templates.ExecuteTemplate(w, "event.html", data)
 	if err != nil {
-		log.Printf("DB Failure: %v", err)
-		http.Redirect(w, r, casLoginUrlWithCallback, http.StatusFound)
+		RespondWithMessage(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if session.CreationDate.Add(cfg.Security.Session.CookieMaxAge).Before(time.Now()) {
-		http.Redirect(w, r, casLoginUrlWithCallback, http.StatusFound)
+}
+
+func (cfg *Config) CreateEventHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	// Parse form values
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
 		return
 	}
-	http.Redirect(w, r, cfg.Routes.Dashboard, http.StatusFound)
+
+	eventName := r.FormValue("event_name")
+	eventDescription := r.FormValue("event_description")
+	eventDate := r.FormValue("event_date")
+	eventParentID := r.FormValue("event_parentID")
+
+	isEventParentIDNotNil := false
+	var eventParentIDConverted int
+	if eventParentID != "" {
+		eventParentIDConverted, err = strconv.Atoi(eventParentID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		isEventParentIDNotNil = true
+	}
+
+	if eventName == "" || eventDescription == "" || eventDate == "" {
+		http.Error(w, "All fields are required", http.StatusBadRequest)
+		return
+	}
+
+	// Convert eventDate to time.Time
+	parsedEventDate, err := time.Parse("2006-01-02T15:04", eventDate)
+	if err != nil {
+		http.Error(w, "Invalid event date format", http.StatusBadRequest)
+		return
+	}
+
+	err = cfg.DB.DB.CreateEvent(ctx, query.CreateEventParams{
+		Name:        eventName,
+		Description: eventDescription,
+		EventDate:   parsedEventDate,
+		ParentEventID: sql.NullInt32{
+			Valid: isEventParentIDNotNil,
+			Int32: int32(eventParentIDConverted),
+		},
+	})
+	if err != nil {
+		RespondWithMessage(w, fmt.Sprintf("DB Failure: %v", err), http.StatusInternalServerError)
+		return
+	}
+	if isEventParentIDNotNil {
+		http.Redirect(w, r, fmt.Sprintf("%s?event_id=%d", cfg.Routes.Event, eventParentIDConverted), http.StatusSeeOther)
+
+	} else {
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+	}
 }

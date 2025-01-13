@@ -13,12 +13,13 @@ import (
 // Config represents the main configuration structure for the application.
 // It includes settings for development mode, server, security, database, base URLs, and routes.
 type Config struct {
-	DevMode  DevMode  `yaml:"dev_mode"`  // Development mode settings.
-	Server   Server   `yaml:"server"`    // Server-related configuration.
-	Security Security `yaml:"security"`  // Security settings such as CSRF and session tokens.
-	DB       DB       `yaml:"db"`        // Database connection details for development and production.
-	BaseURLs BaseURLs `yaml:"base_urls"` // URLs for different environments (Dev and Prod).
-	Routes   Routes   `yaml:"routes"`    // Application route paths.
+	PhotosDir string   `yaml:"photos_directory"` // Path to the photos directory on the machine.
+	DevMode   DevMode  `yaml:"dev_mode"`         // Development mode settings.
+	Server    Server   `yaml:"server"`           // Server-related configuration.
+	Security  Security `yaml:"security"`         // Security settings such as CSRF and session tokens.
+	DB        DB       `yaml:"db"`               // Database connection details for development and production.
+	BaseURLs  BaseURLs `yaml:"base_urls"`        // URLs for different environments (Dev and Prod).
+	Routes    Routes   `yaml:"routes"`           // Application route paths.
 
 	HttpClient *http.Client       `yaml:"-"` // HTTP client instance (excluded from YAML).
 	Templates  *template.Template `yaml:"-"` // Parsed HTML templates (excluded from YAML).
@@ -98,6 +99,8 @@ type Routes struct {
 	CasCallback string `yaml:"cas_callback"` // Path to the CAS callback.
 	Dashboard   string `yaml:"dashboard"`    // Path to the user dashboard.
 	Logout      string `yaml:"logout"`       // Path to the logout page.
+	Event       string `yaml:"event"`        // Path to the event page.
+	Photos      string `yaml:"photos"`       // Path to the photos page.
 }
 
 // BaseURL represents the configuration for a set of URLs.

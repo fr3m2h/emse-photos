@@ -113,29 +113,56 @@ func (q *Queries) DeleteSessionWithToken(ctx context.Context, sessionToken strin
 	return err
 }
 
+const getEventByID = `-- name: GetEventByID :many
+SELECT event_id, name, description, event_date, creation_date, parent_event_id FROM events WHERE event_id = ?
+`
+
+func (q *Queries) GetEventByID(ctx context.Context, eventID uint32) ([]Event, error) {
+	rows, err := q.db.QueryContext(ctx, getEventByID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Event
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.EventID,
+			&i.Name,
+			&i.Description,
+			&i.EventDate,
+			&i.CreationDate,
+			&i.ParentEventID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEvents = `-- name: GetEvents :many
-SELECT name, description, event_date, creation_date, parent_event_id
+SELECT event_id, name, description, event_date, creation_date, parent_event_id
 FROM events
 `
 
-type GetEventsRow struct {
-	Name          string
-	Description   string
-	EventDate     time.Time
-	CreationDate  sql.NullTime
-	ParentEventID sql.NullInt32
-}
-
-func (q *Queries) GetEvents(ctx context.Context) ([]GetEventsRow, error) {
+func (q *Queries) GetEvents(ctx context.Context) ([]Event, error) {
 	rows, err := q.db.QueryContext(ctx, getEvents)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetEventsRow
+	var items []Event
 	for rows.Next() {
-		var i GetEventsRow
+		var i Event
 		if err := rows.Scan(
+			&i.EventID,
 			&i.Name,
 			&i.Description,
 			&i.EventDate,
@@ -177,6 +204,55 @@ SELECT photo_id, path_to_photo, creation_date, event_id FROM photos WHERE event_
 
 func (q *Queries) GetPhotosByEventID(ctx context.Context, eventID uint32) ([]Photo, error) {
 	rows, err := q.db.QueryContext(ctx, getPhotosByEventID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Photo
+	for rows.Next() {
+		var i Photo
+		if err := rows.Scan(
+			&i.PhotoID,
+			&i.PathToPhoto,
+			&i.CreationDate,
+			&i.EventID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPhotosByEventIDWithPagination = `-- name: GetPhotosByEventIDWithPagination :many
+SELECT
+    photo_id,
+    path_to_photo,
+    creation_date,
+    event_id
+FROM
+    photos
+WHERE
+    event_id = ?
+ORDER BY
+    creation_date ASC
+LIMIT ? OFFSET ?
+`
+
+type GetPhotosByEventIDWithPaginationParams struct {
+	EventID uint32
+	Limit   int32
+	Offset  int32
+}
+
+func (q *Queries) GetPhotosByEventIDWithPagination(ctx context.Context, arg GetPhotosByEventIDWithPaginationParams) ([]Photo, error) {
+	rows, err := q.db.QueryContext(ctx, getPhotosByEventIDWithPagination, arg.EventID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

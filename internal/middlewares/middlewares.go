@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"photos/internal/db/query"
 	"photos/internal/handlers"
 	"time"
 )
@@ -53,7 +53,13 @@ func AuthRestricted(cfg handlers.Config) func(http.Handler) http.Handler {
 				redirectToLanding(w, r, cfg)
 				return
 			}
+			userInfo, err := cfg.DB.GetUserWithSession(r.Context(), sessionToken)
+			if err != nil {
+				redirectToLanding(w, r, cfg)
+				return
+			}
 			ctx := context.WithValue(r.Context(), cfg.Security.Session.CookieName, sessionToken)
+			ctx = context.WithValue(ctx, "userInfo", userInfo)
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 		})
@@ -61,18 +67,12 @@ func AuthRestricted(cfg handlers.Config) func(http.Handler) http.Handler {
 }
 
 // AdminRestricted creates a middleware that restricts access to administrators only.
-// It checks the user's session token and retrieves their information from the database.
-// If the user is not an administrator or the session token is invalid, the request is rejected.
+// If the user is not an administrator the request is rejected.
 // AuthRestricted must be applied before this middleware to ensure the session is authenticated.
 func AdminRestricted(cfg handlers.Config) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			sessionToken := r.Context().Value(cfg.Security.Session.CookieName)
-			userInfo, err := cfg.DB.GetUserWithSession(r.Context(), sessionToken.(string))
-			if err != nil {
-				handlers.RespondWithMessage(w, fmt.Sprintf("DB Failure: %v", err), http.StatusInternalServerError)
-				return
-			}
+			userInfo := r.Context().Value(cfg.Security.Session.CookieName).(query.User)
 			if !userInfo.IsAdmin {
 				handlers.RespondWithMessage(w, "Sorry you're not an admin", http.StatusUnauthorized)
 				return

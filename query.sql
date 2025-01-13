@@ -46,8 +46,11 @@ INSERT INTO events (name, description, event_date, parent_event_id)
 VALUES (?, ?, ?, ?);
 
 -- name: GetEvents :many
-SELECT name, description, event_date, creation_date, parent_event_id
+SELECT *
 FROM events;
+
+-- name: GetEventByID :many
+SELECT * FROM events WHERE event_id = ?;
 
 -- name: UpdateEvent :exec
 UPDATE events
@@ -80,3 +83,17 @@ WHERE photo_id = ?;
 
 -- name: DeletePhoto :exec
 DELETE FROM photos WHERE photo_id = ?;
+
+-- name: GetPhotosByEventIDWithPagination :many
+SELECT
+    photo_id,
+    path_to_photo,
+    creation_date,
+    event_id
+FROM
+    photos
+WHERE
+    event_id = ?
+ORDER BY
+    creation_date ASC
+LIMIT ? OFFSET ?;

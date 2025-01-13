@@ -33,19 +33,19 @@ CREATE TABLE events (
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     event_date DATETIME NOT NULL,
-    creation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    creation_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     parent_event_id INT UNSIGNED,
 
     PRIMARY KEY (event_id),
-    FOREIGN KEY (parent_event_id) REFERENCES events(event_id)
+    FOREIGN KEY (parent_event_id) REFERENCES events(event_id) ON DELETE CASCADE
 );
 
 CREATE TABLE photos (
     photo_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
 
     path_to_photo VARCHAR(255) NOT NULL,
-    creation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    creation_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     event_id INT UNSIGNED NOT NULL,
 
@@ -59,7 +59,7 @@ CREATE TABLE user_folders (
     is_sub_folder BOOL DEFAULT false,
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    creation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    creation_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     user_id INT UNSIGNED NOT NULL,
     parent_folder_id INT UNSIGNED,

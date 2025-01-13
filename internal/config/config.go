@@ -29,6 +29,7 @@ func defaultConfig() (Config, error) {
 	}
 
 	defaultCfg := Config{
+		PhotosDir: "./photos_dir",
 		DevMode: DevMode{
 			Enabled: true,
 		},
@@ -83,6 +84,8 @@ func defaultConfig() (Config, error) {
 			CasCallback: "/cas",
 			Dashboard:   "/dashboard",
 			Logout:      "/logout",
+			Event:       "/event",
+			Photos:      "/photos",
 		},
 	}
 	return defaultCfg, nil
