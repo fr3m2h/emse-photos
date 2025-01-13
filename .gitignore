@@ -4,3 +4,4 @@ mock-cas-server/*
 .tmp/*
 .air*
 *.crt
+photos_dir/*
